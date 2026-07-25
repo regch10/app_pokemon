@@ -151,6 +151,9 @@
     </style>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <!-- Mapa nombre→número de Pokémon (1025). Se carga como script clásico para
+         que window.POKE_MAP esté disponible antes del módulo (funciona en file://). -->
+    <script src="pokemon_iconos.js"></script>
 </head>
 <body>
 
@@ -244,7 +247,10 @@
             </div>
             <div class="form-group">
                 <label for="favPokemon">Pokémon favorito:</label>
-                <input type="text" id="favPokemon" placeholder="Ej: Charizard">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="text" id="favPokemon" placeholder="Ej: Charizard">
+                    <span id="favPreview" style="flex-shrink:0;"></span>
+                </div>
             </div>
             <div class="form-group">
                 <label>Top 5 Pokémon favoritos (opcional):</label>
@@ -514,6 +520,46 @@
     const ROUND_SECONDS = 50 * 60;          // 50 minutos por ronda
     let alarmFiredFor = null;               // timerEndsAt para el que ya sonó la alarma
     const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    /* ============================================================
+       ICONOS DE POKÉMON
+       - POKE_MAP (nombre normalizado → nº de Pokédex) se carga desde
+         pokemon_iconos.js antes del módulo.
+       - Las imágenes viven en GitHub, repartidas en images/ e images2/.
+         Se intenta primero images/ y, si falla, images2/ (onerror).
+    ============================================================ */
+    const POKE_ICON_BASE = "https://regch10.github.io/app_pokemon/pokedex1025";
+    const POKE_MAP = window.POKE_MAP || {};
+    function normPoke(s) {
+        return (s || "").toString().replace(/♀/g, "f").replace(/♂/g, "m")
+            .normalize("NFD").replace(/[̀-ͯ]/g, "")
+            .toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+    function pokeNum(name) {
+        const k = normPoke(name);
+        return (k && POKE_MAP[k]) ? POKE_MAP[k] : null;
+    }
+    // Detecta una especie dentro de un texto libre (ej. deck "Charizard ex").
+    function pokeNumInText(text) {
+        const words = (text || "").split(/[^A-Za-z0-9♀♂]+/).filter(Boolean);
+        for (let size = 3; size >= 1; size--) {
+            for (let i = 0; i + size <= words.length; i++) {
+                const n = pokeNum(words.slice(i, i + size).join(""));
+                if (n) return n;
+            }
+        }
+        return null;
+    }
+    // <img> con doble intento de carpeta (images → images2 → ocultar).
+    function pokeImgByNum(n, size) {
+        if (!n) return "";
+        const s = size || 22;
+        const u1 = POKE_ICON_BASE + "/images/" + n + ".png";
+        const u2 = POKE_ICON_BASE + "/images2/" + n + ".png";
+        return `<img src="${u1}" data-alt="${u2}" loading="lazy" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt='';}else{this.style.display='none';}" style="width:${s}px;height:${s}px;vertical-align:middle;object-fit:contain;">`;
+    }
+    function pokeImg(name, size) { return pokeImgByNum(pokeNum(name), size); }
+    function deckImg(deckName, size) { return pokeImgByNum(pokeNumInText(deckName), size); }
 
     const uid  = () => "_" + Math.random().toString(36).substr(2, 9);
     const slug = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || ("jugador-" + Date.now());
@@ -1145,7 +1191,7 @@
             html += list.length
                 ? list.map(e => `<div style="display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px dashed var(--border-color); font-size:13px;">
                     <span>🎂 <strong>${e.day}</strong> · ${e.name}${e.nick ? ` <span style="color:var(--text-muted)">(${e.nick})</span>` : ''}</span>
-                    <span style="color:var(--text-muted)">${e.fav || ''}</span></div>`).join("")
+                    <span style="color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">${e.fav ? pokeImg(e.fav, 22) : ''}${e.fav || ''}</span></div>`).join("")
                 : `<p style="font-size:12px; color:var(--text-muted); margin:0;">—</p>`;
             html += `</div>`;
         }
@@ -1174,9 +1220,9 @@
                 <tr>
                     <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">Entró R${p.joinedRound}</span>` : ''}</td>
                     <td>${p.nick || '-'}</td>
-                    <td>${p.decks[0].name} <span class="tier-badge ${getTierClass(p.decks[0].tier)}">${p.decks[0].tier}</span></td>
-                    <td>${p.decks[1].name} <span class="tier-badge ${getTierClass(p.decks[1].tier)}">${p.decks[1].tier}</span></td>
-                    <td>${p.decks[2].name} <span class="tier-badge ${getTierClass(p.decks[2].tier)}">${p.decks[2].tier}</span></td>
+                    <td>${deckImg(p.decks[0].name, 18)} ${p.decks[0].name} <span class="tier-badge ${getTierClass(p.decks[0].tier)}">${p.decks[0].tier}</span></td>
+                    <td>${deckImg(p.decks[1].name, 18)} ${p.decks[1].name} <span class="tier-badge ${getTierClass(p.decks[1].tier)}">${p.decks[1].tier}</span></td>
+                    <td>${deckImg(p.decks[2].name, 18)} ${p.decks[2].name} <span class="tier-badge ${getTierClass(p.decks[2].tier)}">${p.decks[2].tier}</span></td>
                     <td style="color:${p.active ? 'var(--success-color)' : 'var(--danger)'}">${p.active ? 'Activo' : 'Drop'}</td>
                     ${isAdmin ? `<td>${p.active ? `<button class="btn-danger" style="padding:4px 8px; font-size:12px;" data-drop="${p.id}">Drop</button>` : '-'}</td>` : ''}
                 </tr>`;
@@ -1405,17 +1451,17 @@
                         <div class="player-column p1-side">
                             <div class="player-name">${p1.name}</div>
                             <ul class="deck-order-list">
-                                <li class="deck-order-item">⚔️ Juego 1: <strong>${m.p1DeckOrder[0].name}</strong></li>
-                                <li class="deck-order-item">⚔️ Juego 2: <strong>${m.p1DeckOrder[1].name}</strong></li>
-                                <li class="deck-order-item">🔮 Juego 3: <strong>${m.p1DeckOrder[2].name}</strong></li>
+                                <li class="deck-order-item">⚔️ Juego 1: ${deckImg(m.p1DeckOrder[0].name, 16)} <strong>${m.p1DeckOrder[0].name}</strong></li>
+                                <li class="deck-order-item">⚔️ Juego 2: ${deckImg(m.p1DeckOrder[1].name, 16)} <strong>${m.p1DeckOrder[1].name}</strong></li>
+                                <li class="deck-order-item">🔮 Juego 3: ${deckImg(m.p1DeckOrder[2].name, 16)} <strong>${m.p1DeckOrder[2].name}</strong></li>
                             </ul>
                         </div>
                         <div class="player-column p2-side">
                             <div class="player-name">${p2.name}</div>
                             <ul class="deck-order-list">
-                                <li class="deck-order-item">⚔️ Juego 1: <strong>${m.p2DeckOrder[0].name}</strong></li>
-                                <li class="deck-order-item">⚔️ Juego 2: <strong>${m.p2DeckOrder[1].name}</strong></li>
-                                <li class="deck-order-item">🔮 Juego 3: <strong>${m.p2DeckOrder[2].name}</strong></li>
+                                <li class="deck-order-item">⚔️ Juego 1: ${deckImg(m.p2DeckOrder[0].name, 16)} <strong>${m.p2DeckOrder[0].name}</strong></li>
+                                <li class="deck-order-item">⚔️ Juego 2: ${deckImg(m.p2DeckOrder[1].name, 16)} <strong>${m.p2DeckOrder[1].name}</strong></li>
+                                <li class="deck-order-item">🔮 Juego 3: ${deckImg(m.p2DeckOrder[2].name, 16)} <strong>${m.p2DeckOrder[2].name}</strong></li>
                             </ul>
                         </div>
                     </div>
@@ -1506,7 +1552,7 @@
                     <td style="color:#a9e34b">${r.v}</td>
                     <td>${r.em}</td>
                     <td style="color:#ff8787">${r.d}</td>
-                    <td>${r.fav}</td>
+                    <td><span style="display:inline-flex; align-items:center; gap:5px;">${r.fav ? pokeImg(r.fav, 22) : ''}${r.fav}</span></td>
                 </tr>`).join("");
         }
 
@@ -1926,6 +1972,9 @@
         $("btnPlayerReset").addEventListener("click", () => sendReset("idEmail"));
         $("btnAdminReset").addEventListener("click", () => sendReset("adminEmail"));
         $("btnPrefill").addEventListener("click", () => prefillFromPerfil(true));
+        $("favPokemon").addEventListener("input", () => {
+            $("favPreview").innerHTML = pokeImg($("favPokemon").value, 32);
+        });
         $("historyPlayerSelect").addEventListener("change", renderHistoryDetail);
         $("btnExportCsv").addEventListener("click", exportHistorialCSV);
 
