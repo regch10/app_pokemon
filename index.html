@@ -217,6 +217,11 @@
                 <label for="playerName">Nombre completo:</label>
                 <input type="text" id="playerName" placeholder="Ej: Roberto Granados">
             </div>
+            <div class="form-group">
+                <label for="playerEmail">Correo del jugador (opcional, recomendado):</label>
+                <input type="email" id="playerEmail" placeholder="Ej: jugador@correo.com">
+                <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Sirve como identidad estable: si el organizador registra a la misma persona en otro torneo con el mismo correo, su historial se acumula en vez de duplicarse.</p>
+            </div>
             <div class="fav-grid">
                 <div class="form-group" style="margin:0;">
                     <label for="playerNick">Nickname:</label>
@@ -533,6 +538,9 @@
         document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
         if (btn) btn.classList.add("active");
         $(tabId).classList.add("active");
+        // Regenerar gráficas con el panel YA visible (Chart.js necesita medir
+        // el lienzo; si se crean ocultas, dibuja mal).
+        if (tabId === "historial") renderHistorial();
     }
 
     /* ============================================================
@@ -545,6 +553,7 @@
             return;
         }
         const pName = $("playerName").value.trim();
+        const email = $("playerEmail").value.trim().toLowerCase();
         const nick  = $("playerNick").value.trim();
         const bday  = $("playerBday").value;
         const favP  = $("favPokemon").value.trim();
@@ -559,16 +568,20 @@
         if (decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S por jugador."); return; }
 
         const id = uid();
-        // Clave de perfil:
-        //  - Si es el PRIMER jugador que registro desde mi sesión -> mi uid
-        //    (para que mi identidad se pueda vincular/mergear entre torneos).
-        //  - Si ya tengo un jugador (registro en kiosco de varios) -> id propio
-        //    del jugador, para no pisar perfiles entre sí.
+        // Clave de perfil (para no duplicar historial entre torneos):
+        //  1) Si se indicó CORREO -> clave estable derivada del correo. Así, si
+        //     el organizador registra a la misma persona en otro torneo con el
+        //     mismo correo, su historial se acumula (no se duplica).
+        //  2) Si NO hay correo y es el PRIMER jugador de mi sesión -> mi uid
+        //     (mi propia identidad, vinculable entre torneos).
+        //  3) Si NO hay correo y ya registré otros -> id propio del jugador
+        //     (evita pisar perfiles, pero no se puede deduplicar sin correo).
         const yaTengoJugador = Object.values(jugadoresCache).some(p => p.ownerUid === currentUser.uid);
-        const profileId = yaTengoJugador ? id : currentUser.uid;
+        const profileId = email ? ("mail_" + slug(email))
+                                 : (yaTengoJugador ? id : currentUser.uid);
 
         const player = {
-            id, name: pName, nick, birthday: bday || "",
+            id, name: pName, email, nick, birthday: bday || "",
             favPokemon: favP, topPokemons, decks,
             active: true, profileId,
             ownerUid: currentUser.uid,     // dueño = quien registra (para permisos)
@@ -582,7 +595,7 @@
             // el registro del jugador (que es lo que importa para el torneo).
             try {
                 await setDoc(doc(PERFILES_COL, profileId), {
-                    name: pName, nick, birthday: bday || "",
+                    name: pName, email, nick, birthday: bday || "",
                     favPokemon: favP, topPokemons,
                     decksUsados: decks,   // {name, tier} para restaurar tier al re-inscribirse
                     lastTorneoId: estadoCache.torneoId,
@@ -592,7 +605,7 @@
 
             if (!myPlayerId) { myPlayerId = id; localStorage.setItem(LS_PLAYER, id); }
 
-            ["playerName","playerNick","playerBday","favPokemon","top1","top2","top3","top4","top5","deck1Name","deck2Name","deck3Name"]
+            ["playerName","playerEmail","playerNick","playerBday","favPokemon","top1","top2","top3","top4","top5","deck1Name","deck2Name","deck3Name"]
                 .forEach(i => { $(i).value = ""; });
             toast("✅ Jugador registrado");
         } catch (e) {
@@ -1112,8 +1125,8 @@
         const topD = deckRows.slice(0, 10);
         chartDecks = new Chart($("chartDecks"), {
             type: "bar",
-            data: { labels: topD.map(x => x[0]), datasets: [{ data: topD.map(x => x[1]), backgroundColor: BLUE }] },
-            options: { ...noLegend, indexAxis: "y" }
+            data: { labels: topD.map(x => x[0]), datasets: [{ data: topD.map(x => Number(x[1]) || 0), backgroundColor: BLUE }] },
+            options: { ...noLegend, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
         });
 
         chartWLD = new Chart($("chartWLD"), {
@@ -1364,6 +1377,7 @@
         // no sobrescribir lo que el usuario ya escribió, salvo que fuerce
         const setIf = (id, val) => { if (val && (force || !$(id).value)) $(id).value = val; };
         setIf("playerName", p.name);
+        setIf("playerEmail", p.email);
         setIf("playerNick", p.nick);
         setIf("playerBday", p.birthday);
         setIf("favPokemon", p.favPokemon);
