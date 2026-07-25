@@ -163,6 +163,7 @@
             <span id="connBadge" class="conn-badge conn-off">● Conectando…</span>
             <button class="btn-danger admin-only hidden" style="background-color: transparent; border: 1px solid var(--danger);" id="btnReset">🔄 Nuevo Torneo</button>
             <button class="btn-secondary admin-only hidden" id="btnExport">💾 Descargar Estado</button>
+            <button class="btn-danger admin-only hidden" id="btnWipe" title="Borra jugadores, rondas Y perfiles/historial. Úsalo solo para pruebas.">🧪 Borrar TODO</button>
         </div>
     </header>
 
@@ -558,8 +559,13 @@
         if (decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S por jugador."); return; }
 
         const id = uid();
-        // Clave de perfil = uid del dueño (estable y sin colisiones de nick).
-        const profileId = currentUser.uid;
+        // Clave de perfil:
+        //  - Si es el PRIMER jugador que registro desde mi sesión -> mi uid
+        //    (para que mi identidad se pueda vincular/mergear entre torneos).
+        //  - Si ya tengo un jugador (registro en kiosco de varios) -> id propio
+        //    del jugador, para no pisar perfiles entre sí.
+        const yaTengoJugador = Object.values(jugadoresCache).some(p => p.ownerUid === currentUser.uid);
+        const profileId = yaTengoJugador ? id : currentUser.uid;
 
         const player = {
             id, name: pName, nick, birthday: bday || "",
@@ -571,13 +577,18 @@
 
         try {
             await setDoc(doc(JUGADORES_COL, id), player);
-            await setDoc(doc(PERFILES_COL, profileId), {
-                name: pName, nick, birthday: bday || "",
-                favPokemon: favP, topPokemons,
-                decksUsados: decks,   // {name, tier} para restaurar tier al re-inscribirse
-                lastTorneoId: estadoCache.torneoId,
-                updatedAt: serverTimestamp()
-            }, { merge: true });
+
+            // El perfil es un extra para estadísticas: si falla no debe romper
+            // el registro del jugador (que es lo que importa para el torneo).
+            try {
+                await setDoc(doc(PERFILES_COL, profileId), {
+                    name: pName, nick, birthday: bday || "",
+                    favPokemon: favP, topPokemons,
+                    decksUsados: decks,   // {name, tier} para restaurar tier al re-inscribirse
+                    lastTorneoId: estadoCache.torneoId,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+            } catch (pe) { console.warn("Perfil no guardado (no crítico):", pe.message); }
 
             if (!myPlayerId) { myPlayerId = id; localStorage.setItem(LS_PLAYER, id); }
 
@@ -777,6 +788,33 @@
         } catch (e) {
             console.error(e);
             alert("❌ Error al reiniciar: " + e.message);
+        }
+    }
+
+    // BORRADO TOTAL (pruebas): elimina jugadores, rondas Y perfiles/historial.
+    async function resetTotal() {
+        if (!isAdmin) return;
+        if (!confirm("🧪 BORRADO TOTAL\n\nEsto elimina TODO: jugadores, rondas e incluso los PERFILES y su historial. Es irreversible.\n\nÚsalo solo para limpiar datos de prueba. ¿Continuar?")) return;
+        if (!confirm("Última confirmación: se perderá también el historial de todos los jugadores. ¿Seguro?")) return;
+        try {
+            const batch = writeBatch(db);
+            (await getDocs(collectionGroup(db, "matches"))).forEach(d => batch.delete(d.ref));
+            (await getDocs(RONDAS_COL)).forEach(d => batch.delete(d.ref));
+            (await getDocs(JUGADORES_COL)).forEach(d => batch.delete(d.ref));
+            (await getDocs(PERFILES_COL)).forEach(d => batch.delete(d.ref));
+            batch.set(ESTADO_REF, {
+                currentRoundNumber: 0, maxRounds: 0, isFinished: false,
+                torneoId: "T" + Date.now(), createdAt: serverTimestamp()
+            });
+            await batch.commit();
+
+            localStorage.removeItem(LS_PLAYER);
+            myPlayerId = null;
+            toast("🧹 Base de datos limpia (jugadores, rondas y perfiles)");
+            changeTab("registro", document.querySelector('.tab[data-tab="registro"]'));
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al borrar todo: " + e.message);
         }
     }
 
@@ -1414,6 +1452,7 @@
         $("btnRegister").addEventListener("click", registerPlayer);
         $("btnReset").addEventListener("click", resetTournament);
         $("btnExport").addEventListener("click", exportTournament);
+        $("btnWipe").addEventListener("click", resetTotal);
         $("btnGenerateRound").addEventListener("click", createNewRound);
         $("btnFinishTournament").addEventListener("click", finishTournament);
         $("btnAdminLogin").addEventListener("click", adminLogin);
