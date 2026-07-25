@@ -93,7 +93,9 @@
 
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-main); }
-        input[type="text"], input[type="date"], input[type="email"], input[type="password"], select { width: 100%; padding: 10px 12px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 14px; outline: none; }
+        input[type="text"], input[type="date"], input[type="email"], input[type="password"], input[type="number"], select { width: 100%; padding: 10px 12px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 14px; outline: none; }
+        .report-form select.mini-select { width: auto; min-width: 88px; padding: 5px 6px; font-size: 12px; margin: 2px; display: inline-block; }
+        .report-form input[type="number"] { padding: 6px; }
         input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59, 76, 202, 0.3); }
 
         .deck-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px; }
@@ -188,6 +190,7 @@
         <button class="tab" data-tab="rondas">⚔️ Rondas y Emparejamientos</button>
         <button class="tab" data-tab="posiciones">📊 Tabla de Posiciones</button>
         <button class="tab" data-tab="historial">📈 Historial</button>
+        <button class="tab" data-tab="calendario">🎂 Calendario</button>
         <button class="tab" data-tab="reglas">📜 Reglas</button>
     </div>
 
@@ -195,6 +198,13 @@
     <div id="registro" class="panel active">
         <h2>Inscripción de Competidores</h2>
         <div id="myPlayerNote" class="alert-box alert-success" style="display:none;"></div>
+
+        <!-- Control de registro tardío (solo organizador, con torneo en curso) -->
+        <div id="lateRegBar" class="admin-only hidden" style="background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <span style="font-size:13px;">Registro tardío: <strong id="lateRegState" style="color:var(--danger);">Cerrado</strong></span>
+            <button id="btnToggleLateReg" class="btn-secondary" style="padding:6px 12px; font-size:13px;">Abrir registro tardío</button>
+            <span class="hint" style="font-size:12px; color:var(--text-muted); flex:1; min-width:200px;">Ábrelo para que quien llegó tarde se inscriba <strong>desde su propio teléfono</strong> y controle su mesa (entra con derrotas). Ciérralo al terminar.</span>
+        </div>
 
         <!-- IDENTIDAD DEL JUGADOR (para conservar tu jugador entre dispositivos) -->
         <div id="identityCard" class="admin-bar" style="margin-bottom:20px;">
@@ -262,7 +272,7 @@
             </div>
             <button class="btn-accent" style="margin-top: 10px;" id="btnRegister">➕ Añadir Jugador</button>
             <button class="btn-secondary hidden" style="margin-top: 10px;" id="btnPrefill">🔄 Usar mis datos guardados</button>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">El registro se bloquea automáticamente al iniciar la primera ronda. En tu teléfono quedas vinculado como el jugador que registres.</p>
+            <p id="registerHint" style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">El registro se bloquea automáticamente al iniciar la primera ronda. En tu teléfono quedas vinculado como el jugador que registres.</p>
         </div>
 
         <h2>Lista de Inscritos (<span id="countDisplay">0</span>)</h2>
@@ -276,16 +286,55 @@
 
     <!-- PESTAÑA: RONDAS -->
     <div id="rondas" class="panel">
+        <!-- Reloj + fecha + cronómetro de ronda -->
+        <div id="clockBar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:12px 16px; margin-bottom:18px;">
+            <div>
+                <div id="clockTime" style="font-size:22px; font-weight:bold; color:var(--accent-yellow); font-variant-numeric:tabular-nums;">--:--:--</div>
+                <div id="clockDate" style="font-size:12px; color:var(--text-muted); text-transform:capitalize;"></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <div style="text-align:center;">
+                    <div id="timerDisplay" style="font-size:30px; font-weight:bold; font-variant-numeric:tabular-nums; color:var(--success-color); line-height:1;">50:00</div>
+                    <div style="font-size:11px; color:var(--text-muted);">Cronómetro de ronda (50 min)</div>
+                </div>
+                <div class="admin-only hidden" style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button id="btnTimerStart" class="btn-secondary" style="padding:6px 10px; font-size:12px;">▶️ Iniciar</button>
+                    <button id="btnTimerPause" class="btn-secondary" style="padding:6px 10px; font-size:12px;">⏸️ Pausar</button>
+                    <button id="btnTimerReset" class="btn-secondary" style="padding:6px 10px; font-size:12px;">🔄 Reiniciar</button>
+                    <button id="btnTimerPlus" class="btn-secondary" style="padding:6px 10px; font-size:12px;">＋5 min</button>
+                </div>
+            </div>
+        </div>
+
         <div id="roundAlert" class="alert-box alert-warning"></div>
         <div id="finishedAlert" class="alert-box alert-success">🏆 ¡EL TORNEO HA FINALIZADO! REVISA LA TABLA DE POSICIONES.</div>
 
+        <!-- Configuración de rondas (solo organizador) -->
+        <div id="roundConfig" class="admin-only hidden" style="background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; padding:14px 16px; margin-bottom:18px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+            <span style="font-size:13px; color:var(--text-muted);">Rondas Sistema Suizo: <strong id="suggestedRounds" style="color:var(--accent-yellow);">—</strong></span>
+            <span style="font-size:13px; color:var(--text-muted);">Rondas del torneo: <strong id="maxRoundsLabel" style="color:var(--text-main); font-size:16px;">—</strong></span>
+            <div style="display:flex; gap:6px;">
+                <button id="btnAddRound" class="btn-secondary" style="padding:6px 12px; font-size:13px;">➕ Agregar Ronda</button>
+                <button id="btnRemoveRound" class="btn-secondary" style="padding:6px 12px; font-size:13px;">➖ Quitar Ronda</button>
+            </div>
+        </div>
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <h2 id="roundTitle" style="margin-bottom: 0;">Ronda Actual: Ninguna</h2>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; flex-wrap:wrap;">
+                <button id="btnStartTournament" class="btn-accent admin-only hidden">🚀 Comenzar Torneo</button>
                 <button id="btnGenerateRound" class="btn-accent admin-only hidden">⚔️ Generar Siguiente Ronda</button>
                 <button id="btnFinishTournament" class="btn-success admin-only hidden" style="display: none;">🏆 Finalizar torneo</button>
             </div>
         </div>
+
+        <!-- Selector de ronda (para ver rondas pasadas) -->
+        <div id="roundSelectorBar" style="display:none; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+            <span style="font-size:13px; color:var(--text-muted);">Ver ronda:</span>
+            <div id="roundSelector" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+        </div>
+        <div id="pastRoundNote" class="alert-box alert-warning" style="display:none;"></div>
+
         <div id="matchesWrapper">
             <p style="color: var(--text-muted); text-align: center;">Esperando a que el organizador genere la primera ronda…</p>
         </div>
@@ -357,6 +406,15 @@
             <select id="historyPlayerSelect"><option value="">— Elige un jugador —</option></select>
         </div>
         <div id="historyDetail"></div>
+    </div>
+
+    <!-- PESTAÑA: CALENDARIO -->
+    <div id="calendario" class="panel">
+        <h2>🎂 Calendario de Cumpleaños</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">
+            Cumpleañeros de todo el año (jugadores con fecha de cumpleaños registrada). El mes en curso se resalta en amarillo.
+        </p>
+        <div id="birthdayGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;"></div>
     </div>
 
     <!-- PESTAÑA: REGLAS -->
@@ -451,6 +509,12 @@
     let myPerfilUnsub  = null; // desuscriptor del listener de mi perfil
     let prefilledOnce  = false;
 
+    // Fase 1: visualización de rondas pasadas + cronómetro
+    let viewedRound   = null;              // ronda que se está viendo (null = ronda actual)
+    const ROUND_SECONDS = 50 * 60;          // 50 minutos por ronda
+    let alarmFiredFor = null;               // timerEndsAt para el que ya sonó la alarma
+    const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
     const uid  = () => "_" + Math.random().toString(36).substr(2, 9);
     const slug = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || ("jugador-" + Date.now());
     const $ = (id) => document.getElementById(id);
@@ -507,6 +571,12 @@
             });
         });
 
+        // Jugadores que entraron tarde: 1 derrota (0 pts) por cada ronda perdida.
+        players.forEach(p => {
+            const missed = (p.joinedRound && p.joinedRound > 1) ? (p.joinedRound - 1) : 0;
+            if (missed > 0) p.losses += missed;
+        });
+
         const active = players.filter(p => p.active);
         const avg = active.length ? active.reduce((s, p) => s + p.points, 0) / active.length : 0;
         players.forEach(p => {
@@ -541,6 +611,7 @@
         // Regenerar gráficas con el panel YA visible (Chart.js necesita medir
         // el lienzo; si se crean ocultas, dibuja mal).
         if (tabId === "historial") renderHistorial();
+        if (tabId === "calendario") renderBirthdays();
     }
 
     /* ============================================================
@@ -548,8 +619,10 @@
     ============================================================ */
     async function registerPlayer() {
         if (!currentUser) { toast("Conectando… intenta de nuevo en un segundo"); return; }
-        if (estadoCache.currentRoundNumber > 0) {
-            alert("❌ El torneo ya ha comenzado. No se pueden inscribir más jugadores.");
+        const torneoEnCurso = estadoCache.currentRoundNumber > 0;
+        const lateOpen = !!estadoCache.lateRegistrationOpen;
+        if (torneoEnCurso && !isAdmin && !lateOpen) {
+            alert("❌ El torneo ya comenzó y el registro tardío está cerrado. Pide al organizador que lo abra para inscribirte.");
             return;
         }
         const pName = $("playerName").value.trim();
@@ -577,13 +650,27 @@
         //  3) Si NO hay correo y ya registré otros -> id propio del jugador
         //     (evita pisar perfiles, pero no se puede deduplicar sin correo).
         const yaTengoJugador = Object.values(jugadoresCache).some(p => p.ownerUid === currentUser.uid);
+        // Si el ADMIN registra a otra persona con el torneo en curso, el perfil se
+        // guarda con el id del jugador (no con el uid del admin). Si el jugador se
+        // inscribe a sí mismo (registro tardío), usa su propio uid como identidad.
+        const adminAddingOther = isAdmin && torneoEnCurso;
         const profileId = email ? ("mail_" + slug(email))
-                                 : (yaTengoJugador ? id : currentUser.uid);
+                                 : ((yaTengoJugador || adminAddingOther) ? id : currentUser.uid);
+
+        // Jugador tardío: entra en la SIGUIENTE ronda y arrastra una derrota por
+        // cada ronda ya jugada (0 puntos). joinedRound = 0 => se inscribió a tiempo.
+        const joinedRound = torneoEnCurso ? (estadoCache.currentRoundNumber + 1) : 0;
+        if (torneoEnCurso) {
+            const msg = isAdmin
+                ? `Vas a inscribir a "${pName}" con el torneo en curso.\n\nEntrará en la Ronda ${joinedRound} y arrastrará ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.\n\n¿Continuar?`
+                : `Te vas a inscribir con el torneo en curso.\n\nEntrarás en la Ronda ${joinedRound} con ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.\n\n¿Continuar?`;
+            if (!confirm(msg)) return;
+        }
 
         const player = {
             id, name: pName, email, nick, birthday: bday || "",
             favPokemon: favP, topPokemons, decks,
-            active: true, profileId,
+            active: true, profileId, joinedRound,
             ownerUid: currentUser.uid,     // dueño = quien registra (para permisos)
             createdAt: serverTimestamp()
         };
@@ -661,7 +748,11 @@
         let maxRounds = estadoCache.maxRounds;
         if (estadoCache.currentRoundNumber === 0) {
             if (active.length < 2) { alert("❌ Necesitas al menos 2 jugadores activos."); return; }
-            maxRounds = Math.ceil(Math.log2(active.length));
+            // Respeta las rondas que el organizador haya fijado antes de comenzar;
+            // si no fijó nada, usa las rondas sugeridas del Sistema Suizo.
+            maxRounds = (estadoCache.maxRounds && estadoCache.maxRounds > 0)
+                ? estadoCache.maxRounds
+                : Math.ceil(Math.log2(active.length));
         } else {
             const last = lastRound();
             if (last && last.matches.some(m => !m.completed)) {
@@ -712,9 +803,13 @@
             const torneoId = estadoCache.torneoId || ("T" + Date.now());
             batch.set(ESTADO_REF, {
                 currentRoundNumber: roundNumber, maxRounds,
-                isFinished: false, torneoId
+                isFinished: false, torneoId,
+                // Auto-inicia el cronómetro de 50 min al generar la ronda
+                timerRunning: true, timerEndsAt: Date.now() + ROUND_SECONDS * 1000, timerRemaining: null
             }, { merge: true });
             await batch.commit();
+            alarmFiredFor = null;               // permite que la alarma vuelva a sonar
+            viewedRound = null;                 // salta a ver la ronda recién creada
             toast("⚔️ Ronda " + roundNumber + " generada");
         } catch (e) {
             console.error(e);
@@ -730,6 +825,9 @@
         const isMine = currentUser && (match.p1OwnerUid === currentUser.uid || match.p2OwnerUid === currentUser.uid);
         if (!isAdmin && !isMine) { toast("🔒 Solo puedes reportar tu propia mesa"); return; }
         if (estadoCache.isFinished && !isAdmin) { toast("🔒 El torneo ya finalizó"); return; }
+        // Corrección de un resultado ya existente: pedir confirmación (punto 2).
+        if (match.completed && match.winner !== result &&
+            !confirm("Esta mesa ya tenía un resultado registrado.\n¿Cambiarlo por el nuevo? Recalculará las posiciones.")) return;
 
         try {
             await updateDoc(
@@ -740,6 +838,44 @@
         } catch (e) {
             console.error(e);
             alert("❌ Error al reportar: " + e.message);
+        }
+    }
+
+    // Reporte completo: marcador (juegos ganados) + orden de decks jugado.
+    // El ganador se deriva del marcador. Escribe SOLO las 6 claves permitidas
+    // por las reglas de Firestore para los dueños de la mesa.
+    async function reportMatchFull(matchId) {
+        const match = matchesCache.find(m => m.matchId === matchId);
+        if (!match) return;
+
+        const isMine = currentUser && (match.p1OwnerUid === currentUser.uid || match.p2OwnerUid === currentUser.uid);
+        const isCurrent = match.roundNumber === estadoCache.currentRoundNumber;
+        if (!isAdmin && !(isMine && isCurrent)) { toast("🔒 No puedes reportar esta mesa"); return; }
+        if (estadoCache.isFinished && !isAdmin) { toast("🔒 El torneo ya finalizó"); return; }
+
+        const g1 = parseInt(($("g1_" + matchId) || {}).value, 10);
+        const g2 = parseInt(($("g2_" + matchId) || {}).value, 10);
+        if (isNaN(g1) || isNaN(g2) || g1 < 0 || g2 < 0) { toast("Ingresa el marcador (ej. 2 y 1)"); return; }
+
+        const winner = g1 > g2 ? "p1" : (g2 > g1 ? "p2" : "tie");
+        const readOrder = (pfx) => ["a", "b", "c"]
+            .map(k => { const el = $(pfx + k + "_" + matchId); return el ? el.value : null; })
+            .filter(Boolean);
+        const p1Played = readOrder("d1");
+        const p2Played = readOrder("d2");
+
+        if (match.completed && match.winner !== winner &&
+            !confirm("Esta mesa ya tenía un resultado.\n¿Cambiarlo por el nuevo? Recalculará las posiciones.")) return;
+
+        try {
+            await updateDoc(
+                doc(db, "rondas", "r" + match.roundNumber, "matches", match.matchId),
+                { completed: true, winner, p1Games: g1, p2Games: g2, p1Played, p2Played }
+            );
+            toast("✅ Resultado guardado: " + g1 + "–" + g2);
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al reportar: " + e.message + "\n\n¿Publicaste las reglas de Firestore actualizadas?");
         }
     }
 
@@ -855,6 +991,172 @@
     }
 
     /* ============================================================
+       CONFIGURAR Nº DE RONDAS (solo admin)
+    ============================================================ */
+    async function changeMaxRounds(delta) {
+        if (!isAdmin) return;
+        const active = Object.values(jugadoresCache).filter(p => p.active);
+        const suggested = active.length >= 2 ? Math.ceil(Math.log2(active.length)) : 1;
+        const cur = estadoCache.maxRounds || suggested;
+        const next = cur + delta;
+        const floor = Math.max(1, estadoCache.currentRoundNumber);
+        if (next < floor) { toast("No puedes tener menos rondas que la ronda actual"); return; }
+        if (next > 20) { toast("Máximo 20 rondas"); return; }
+        try {
+            await setDoc(ESTADO_REF, { maxRounds: next }, { merge: true });
+            toast("Rondas del torneo: " + next);
+        } catch (e) { alert("❌ " + e.message); }
+    }
+
+    // Abre/cierra el registro tardío para que los jugadores se inscriban solos.
+    async function toggleLateReg() {
+        if (!isAdmin) return;
+        const target = !estadoCache.lateRegistrationOpen;
+        try {
+            await setDoc(ESTADO_REF, { lateRegistrationOpen: target }, { merge: true });
+            toast(target ? "⏳ Registro tardío ABIERTO" : "Registro tardío cerrado");
+        } catch (e) { alert("❌ " + e.message); }
+    }
+
+    /* ============================================================
+       RELOJ + CRONÓMETRO DE RONDA (50 min) + ALARMA
+       El cronómetro se ancla a torneo_estado (timerEndsAt) para que
+       todos los dispositivos vean el mismo tiempo. Solo el admin lo controla.
+    ============================================================ */
+    function timerState() {
+        const running = !!estadoCache.timerRunning;
+        let remaining;
+        if (running && estadoCache.timerEndsAt) {
+            remaining = Math.max(0, Math.round((estadoCache.timerEndsAt - Date.now()) / 1000));
+        } else {
+            remaining = (estadoCache.timerRemaining != null) ? estadoCache.timerRemaining : ROUND_SECONDS;
+        }
+        return { running, remaining };
+    }
+
+    function tickClock() {
+        const now = new Date();
+        const t = $("clockTime"), d = $("clockDate");
+        if (t) t.textContent = now.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        if (d) d.textContent = now.toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+        updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+        const el = $("timerDisplay");
+        if (!el) return;
+        const { running, remaining } = timerState();
+        const m = Math.floor(remaining / 60), s = remaining % 60;
+        el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+        el.style.color = remaining <= 0 ? "var(--danger)"
+            : (remaining <= 300 ? "var(--warning-color)" : "var(--success-color)");
+        if (running && remaining <= 0 && alarmFiredFor !== estadoCache.timerEndsAt) {
+            alarmFiredFor = estadoCache.timerEndsAt;
+            fireAlarm();
+        }
+    }
+
+    function fireAlarm() {
+        try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AC();
+            [0, 0.55, 1.1].forEach(t => {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.type = "square"; o.frequency.value = 880;
+                o.connect(g); g.connect(ctx.destination);
+                g.gain.setValueAtTime(0.0001, ctx.currentTime + t);
+                g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + t + 0.05);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.45);
+                o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.5);
+            });
+        } catch (e) { console.warn("audio:", e.message); }
+        if ("Notification" in window && Notification.permission === "granted") {
+            try { new Notification("⏰ ¡Tiempo terminado!", { body: "Se acabaron los 50 minutos de la ronda." }); } catch (e) {}
+        }
+        toast("⏰ ¡Tiempo de ronda terminado!");
+    }
+
+    async function timerStart() {
+        if (!isAdmin) return;
+        if ("Notification" in window && Notification.permission === "default") {
+            try { await Notification.requestPermission(); } catch (e) {}
+        }
+        const { remaining } = timerState();
+        const rem = remaining > 0 ? remaining : ROUND_SECONDS;
+        alarmFiredFor = null;
+        try { await setDoc(ESTADO_REF, { timerRunning: true, timerEndsAt: Date.now() + rem * 1000, timerRemaining: null }, { merge: true }); }
+        catch (e) { alert("❌ " + e.message); }
+    }
+    async function timerPause() {
+        if (!isAdmin) return;
+        const { remaining } = timerState();
+        try { await setDoc(ESTADO_REF, { timerRunning: false, timerRemaining: remaining, timerEndsAt: null }, { merge: true }); }
+        catch (e) { alert("❌ " + e.message); }
+    }
+    async function timerReset() {
+        if (!isAdmin) return;
+        alarmFiredFor = null;
+        try { await setDoc(ESTADO_REF, { timerRunning: false, timerRemaining: ROUND_SECONDS, timerEndsAt: null }, { merge: true }); }
+        catch (e) { alert("❌ " + e.message); }
+    }
+    async function timerAddFive() {
+        if (!isAdmin) return;
+        const { running, remaining } = timerState();
+        const nr = remaining + 300;
+        try {
+            if (running) await setDoc(ESTADO_REF, { timerEndsAt: Date.now() + nr * 1000 }, { merge: true });
+            else await setDoc(ESTADO_REF, { timerRemaining: nr }, { merge: true });
+        } catch (e) { alert("❌ " + e.message); }
+    }
+
+    /* ============================================================
+       CALENDARIO DE CUMPLEAÑOS
+    ============================================================ */
+    function renderBirthdays() {
+        const grid = $("birthdayGrid");
+        if (!grid) return;
+        const map = {};
+        const add = (name, nick, bday, fav) => {
+            if (!bday) return;
+            const key = (name || "").toLowerCase() + "|" + bday;
+            if (!map[key]) map[key] = { name: name || "(sin nombre)", nick: nick || "", bday, fav: fav || "" };
+        };
+        perfilesCache.forEach(p => add(p.name, p.nick, p.birthday, p.favPokemon));
+        Object.values(jugadoresCache).forEach(p => add(p.name, p.nick, p.birthday, p.favPokemon));
+
+        const byMonth = Array.from({ length: 12 }, () => []);
+        Object.values(map).forEach(e => {
+            const parts = (e.bday || "").split("-");
+            if (parts.length < 3) return;
+            const mo = parseInt(parts[1], 10) - 1, day = parseInt(parts[2], 10);
+            if (isNaN(mo) || mo < 0 || mo > 11 || isNaN(day)) return;
+            byMonth[mo].push({ ...e, day });
+        });
+
+        const curMonth = new Date().getMonth();
+        let total = 0;
+        let html = "";
+        for (let m = 0; m < 12; m++) {
+            const list = byMonth[m].sort((a, b) => a.day - b.day);
+            total += list.length;
+            const isCur = m === curMonth;
+            html += `<div style="background:var(--panel-accent); border:1px solid ${isCur ? 'var(--accent-yellow)' : 'var(--border-color)'}; border-radius:8px; padding:12px;">
+                <h3 style="margin:0 0 8px; color:${isCur ? 'var(--accent-yellow)' : 'var(--text-main)'}; font-size:15px;">${MONTHS[m]}${isCur ? ' • este mes' : ''}</h3>`;
+            html += list.length
+                ? list.map(e => `<div style="display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px dashed var(--border-color); font-size:13px;">
+                    <span>🎂 <strong>${e.day}</strong> · ${e.name}${e.nick ? ` <span style="color:var(--text-muted)">(${e.nick})</span>` : ''}</span>
+                    <span style="color:var(--text-muted)">${e.fav || ''}</span></div>`).join("")
+                : `<p style="font-size:12px; color:var(--text-muted); margin:0;">—</p>`;
+            html += `</div>`;
+        }
+        if (total === 0) {
+            grid.innerHTML = `<p style="color:var(--text-muted);">Aún no hay cumpleaños registrados. Se muestran los jugadores que indicaron su fecha de cumpleaños al inscribirse.</p>`;
+        } else {
+            grid.innerHTML = html;
+        }
+    }
+
+    /* ============================================================
        RENDER
     ============================================================ */
     function getTierClass(tier) {
@@ -870,7 +1172,7 @@
         list.forEach(p => {
             tbody.innerHTML += `
                 <tr>
-                    <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}</td>
+                    <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">Entró R${p.joinedRound}</span>` : ''}</td>
                     <td>${p.nick || '-'}</td>
                     <td>${p.decks[0].name} <span class="tier-badge ${getTierClass(p.decks[0].tier)}">${p.decks[0].tier}</span></td>
                     <td>${p.decks[1].name} <span class="tier-badge ${getTierClass(p.decks[1].tier)}">${p.decks[1].tier}</span></td>
@@ -881,9 +1183,35 @@
         });
         $("countDisplay").innerText = list.length;
 
-        const locked = estadoCache.currentRoundNumber > 0;
+        // El torneo en curso bloquea el registro, salvo: (a) el organizador, o
+        // (b) cualquier jugador cuando el registro tardío está abierto.
+        const inCourse = estadoCache.currentRoundNumber > 0;
+        const lateOpen = !!estadoCache.lateRegistrationOpen;
+        const canRegister = !inCourse || isAdmin || lateOpen;
+        const locked = !canRegister;
         $("registroForm").style.opacity = locked ? "0.5" : "1";
         $("registroForm").style.pointerEvents = locked ? "none" : "auto";
+
+        // Barra de control del organizador (solo con torneo en curso)
+        const lateBar = $("lateRegBar");
+        if (lateBar) lateBar.style.display = (isAdmin && inCourse) ? "flex" : "none";
+        const lateState = $("lateRegState");
+        if (lateState) {
+            lateState.textContent = lateOpen ? "Abierto" : "Cerrado";
+            lateState.style.color = lateOpen ? "var(--success-color)" : "var(--danger)";
+        }
+        const btnLate = $("btnToggleLateReg");
+        if (btnLate) btnLate.textContent = lateOpen ? "Cerrar registro tardío" : "Abrir registro tardío";
+
+        const hint = $("registerHint");
+        if (hint) {
+            if (inCourse && isAdmin)
+                hint.innerHTML = `⚠️ <strong>Modo organizador:</strong> inscríbelo directamente (queda a tu nombre) o abre el registro tardío para que se inscriba desde su teléfono y controle su mesa. Entrará en la Ronda ${estadoCache.currentRoundNumber + 1} con ${estadoCache.currentRoundNumber} derrota(s).`;
+            else if (inCourse && lateOpen)
+                hint.innerHTML = `⏳ <strong>Registro tardío abierto:</strong> entrarás en la Ronda ${estadoCache.currentRoundNumber + 1} con ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.`;
+            else
+                hint.innerHTML = "El registro se bloquea automáticamente al iniciar la primera ronda. En tu teléfono quedas vinculado como el jugador que registres.";
+        }
 
         const note = $("myPlayerNote");
         if (myPlayerId && jugadoresCache[myPlayerId]) {
@@ -892,30 +1220,93 @@
         } else { note.style.display = "none"; }
     }
 
+    // Escapa texto para insertarlo con seguridad en atributos HTML.
+    const esc = (s) => (s || "").toString()
+        .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Desplegable con los 3 mazos de un jugador (para reportar el orden jugado).
+    function deckSelect(id, decks, selectedName) {
+        const opts = (decks || []).map(d =>
+            `<option value="${esc(d.name)}" ${d.name === selectedName ? "selected" : ""}>${esc(d.name)}</option>`
+        ).join("");
+        return `<select id="${id}" class="mini-select">${opts}</select>`;
+    }
+
+    // Ronda que se debe visualizar: la seleccionada (viewedRound) si es válida,
+    // o la última (actual) por defecto.
+    function getViewedRound() {
+        const rs = roundsFromMatches();
+        if (!rs.length) return null;
+        if (viewedRound != null) {
+            const found = rs.find(r => r.roundNumber === viewedRound);
+            if (found) return found;
+        }
+        return rs[rs.length - 1];
+    }
+
+    // Botones R1, R2, R3… para navegar entre rondas pasadas y la actual.
+    function renderRoundSelector() {
+        const bar = $("roundSelectorBar");
+        const sel = $("roundSelector");
+        const rs = roundsFromMatches();
+        if (rs.length <= 1) { bar.style.display = "none"; sel.innerHTML = ""; return; }
+        bar.style.display = "flex";
+        const curNum = rs[rs.length - 1].roundNumber;
+        const activeNum = (viewedRound != null && rs.some(r => r.roundNumber === viewedRound)) ? viewedRound : curNum;
+        sel.innerHTML = rs.map(r => {
+            const on = r.roundNumber === activeNum;
+            const isCur = r.roundNumber === curNum;
+            const style = on
+                ? "background:var(--accent-yellow); color:#111; border-color:var(--accent-yellow);"
+                : "";
+            return `<button class="btn-secondary" data-viewround="${r.roundNumber}" style="padding:6px 12px; font-size:13px; ${style}">R${r.roundNumber}${isCur ? ' • actual' : ''}</button>`;
+        }).join("");
+    }
+
+    // Panel de configuración de rondas (rondas sugeridas + agregar/quitar).
+    function renderRoundConfig() {
+        const active = Object.values(jugadoresCache).filter(p => p.active);
+        const suggested = active.length >= 2 ? Math.ceil(Math.log2(active.length)) : 0;
+        const suggEl = $("suggestedRounds"); if (suggEl) suggEl.textContent = suggested || "—";
+        const maxEl = $("maxRoundsLabel");
+        if (maxEl) maxEl.textContent = estadoCache.maxRounds || suggested || "—";
+        const rm = $("btnRemoveRound");
+        if (rm) rm.disabled = (estadoCache.maxRounds || suggested || 0) <= Math.max(1, estadoCache.currentRoundNumber);
+    }
+
     function renderMatches() {
         const wrapper = $("matchesWrapper");
         const alertBox = $("roundAlert");
         const finishAlert = $("finishedAlert");
+        const btnStart = $("btnStartTournament");
         const btnGen = $("btnGenerateRound");
         const btnFinish = $("btnFinishTournament");
+        const pastNote = $("pastRoundNote");
 
         alertBox.style.display = "none";
         finishAlert.style.display = "none";
+        pastNote.style.display = "none";
+
+        renderRoundConfig();
+        renderRoundSelector();
+
+        // Estado de botones (siempre según la ronda ACTUAL, no la visualizada)
+        if (isAdmin) {
+            btnStart.style.display = estadoCache.currentRoundNumber === 0 ? "inline-flex" : "none";
+            btnGen.style.display   = estadoCache.currentRoundNumber === 0 ? "none" : "inline-flex";
+            btnFinish.style.display = "none";
+        }
 
         if (estadoCache.currentRoundNumber === 0) {
             $("roundTitle").innerText = "Ronda Actual: Ninguna";
             wrapper.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Esperando a que el organizador genere la primera ronda…</p>';
-            if (isAdmin) { btnGen.classList.remove("hidden"); btnGen.style.display = "inline-flex"; btnGen.disabled = false; }
-            btnFinish.style.display = "none";
             return;
         }
 
         $("roundTitle").innerText = `Ronda Actual: ${estadoCache.currentRoundNumber} de ${estadoCache.maxRounds}`;
 
         if (isAdmin) {
-            btnGen.classList.remove("hidden");
-            btnGen.style.display = "inline-flex";
-            btnFinish.style.display = "none";
             const allDone = allMatchesDone();
             if (estadoCache.currentRoundNumber === estadoCache.maxRounds) {
                 btnGen.style.display = "none";
@@ -924,7 +1315,7 @@
                     btnFinish.style.display = "inline-flex"; btnFinish.disabled = true;
                     btnFinish.innerText = "Torneo Finalizado";
                 } else if (!allDone) {
-                    alertBox.innerText = "⚠️ ¡ATENCIÓN: ESTA ES LA ÚLTIMA RONDA DEL TORNEO!";
+                    alertBox.innerText = "⚠️ ¡ATENCIÓN: ESTA ES LA ÚLTIMA RONDA DEL TORNEO! (puedes agregar rondas arriba)";
                     alertBox.style.display = "block";
                 } else {
                     btnFinish.style.display = "inline-flex"; btnFinish.disabled = false;
@@ -934,8 +1325,18 @@
             finishAlert.style.display = "block";
         }
 
-        const round = lastRound();
+        const round = getViewedRound();
         if (!round) { wrapper.innerHTML = ""; return; }
+
+        const currentNum = estadoCache.currentRoundNumber;
+        const isCurrentRound = round.roundNumber === currentNum;
+        if (!isCurrentRound) {
+            pastNote.className = "alert-box alert-warning";
+            pastNote.style.display = "block";
+            pastNote.innerHTML = isAdmin
+                ? `📖 Estás viendo la <strong>Ronda ${round.roundNumber}</strong> (ronda pasada). Como organizador puedes corregir resultados aquí; recalculará las posiciones pero no re-emparejará rondas ya generadas.`
+                : `📖 Estás viendo la <strong>Ronda ${round.roundNumber}</strong> (ronda pasada, solo lectura).`;
+        }
 
         wrapper.innerHTML = "";
         const byId = jugadoresCache;
@@ -951,19 +1352,48 @@
             if (!p1 || !p2) return;
 
             const isMine = currentUser && (m.p1OwnerUid === currentUser.uid || m.p2OwnerUid === currentUser.uid);
-            const canReport = isAdmin || isMine;
-            const s1 = m.winner === "p1" ? "background-color: var(--success-color); color: white;" : "";
-            const s2 = m.winner === "p2" ? "background-color: var(--success-color); color: white;" : "";
-            const st = m.winner === "tie" ? "background-color: var(--success-color); color: white;" : "";
+            // En rondas pasadas SOLO el organizador puede editar (los jugadores
+            // reportan únicamente su mesa de la ronda actual).
+            const canReport = isAdmin || (isMine && isCurrentRound);
+            const mid = m.matchId;
+            const g1v = (m.p1Games != null ? m.p1Games : "");
+            const g2v = (m.p2Games != null ? m.p2Games : "");
+            const winLabel = m.completed
+                ? (m.winner === "tie" ? "🤝 Empate" : `🏆 Ganó ${m.winner === "p1" ? p1.name : p2.name}`)
+                : "";
+            const ord = (played, suggested, i) =>
+                (played && played[i]) || (suggested && suggested[i] && suggested[i].name) || "";
 
             const actions = canReport
-                ? `<button class="btn-secondary" style="${s1}" data-report="${m.matchId}" data-result="p1">🏆 Ganó ${p1.name}</button>
-                   <button class="btn-secondary" style="${st}" data-report="${m.matchId}" data-result="tie">🤝 Empate</button>
-                   <button class="btn-secondary" style="${s2}" data-report="${m.matchId}" data-result="p2">🏆 Ganó ${p2.name}</button>`
-                : `<button class="btn-secondary" disabled>🏆 ${p1.name}</button>
-                   <button class="btn-secondary" disabled>🤝 Empate</button>
-                   <button class="btn-secondary" disabled>🏆 ${p2.name}</button>
-                   <div class="locked-note">🔒 Solo el organizador o los jugadores de esta mesa pueden reportar.</div>`;
+                ? `<div class="report-form" style="width:100%;">
+                     <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                        <strong style="color:var(--accent-blue)">${p1.name}</strong>
+                        <input type="number" min="0" max="9" id="g1_${mid}" value="${g1v}" style="width:56px; text-align:center;">
+                        <span style="font-weight:bold;">–</span>
+                        <input type="number" min="0" max="9" id="g2_${mid}" value="${g2v}" style="width:56px; text-align:center;">
+                        <strong style="color:#fa5252">${p2.name}</strong>
+                     </div>
+                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                        <div>
+                           <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p1.name}:</div>
+                           ${["a","b","c"].map((k,i)=>deckSelect("d1"+k+"_"+mid, p1.decks, ord(m.p1Played, m.p1DeckOrder, i))).join(" ")}
+                        </div>
+                        <div>
+                           <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p2.name}:</div>
+                           ${["a","b","c"].map((k,i)=>deckSelect("d2"+k+"_"+mid, p2.decks, ord(m.p2Played, m.p2DeckOrder, i))).join(" ")}
+                        </div>
+                     </div>
+                     <div style="text-align:center;">
+                        <button class="btn-accent" data-savereport="${mid}">💾 Guardar resultado</button>
+                        ${winLabel ? `<span style="margin-left:10px; color:var(--success-color); font-weight:600;">${winLabel}</span>` : ""}
+                     </div>
+                   </div>`
+                : `<div style="width:100%; text-align:center;">
+                     ${m.completed
+                        ? `<div style="font-size:15px; margin-bottom:6px;">Resultado: <strong>${g1v}</strong> – <strong>${g2v}</strong> &nbsp; <span style="color:var(--success-color); font-weight:600;">${winLabel}</span></div>`
+                        : `<div class="locked-note">⏳ Aún sin reportar.</div>`}
+                     <div class="locked-note">🔒 Solo el organizador o los jugadores de esta mesa pueden reportar.</div>
+                   </div>`;
 
             wrapper.innerHTML += `
                 <div class="match-card ${isMine ? 'my-table' : ''}">
@@ -1013,7 +1443,7 @@
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${idx + 1}</strong></td>
-                    <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}</td>
+                    <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">R${p.joinedRound}</span>` : ''}</td>
                     <td style="color: var(--accent-yellow); font-weight: bold; font-size:15px;">${p.points}</td>
                     <td class="buchholz-col">${p.buchholz}</td>
                     <td style="color:#a9e34b">${p.wins}</td>
@@ -1209,6 +1639,7 @@
         renderMatches();
         renderStandings();
         renderHistorial();
+        renderBirthdays();
         updateIdentityUI();
     }
 
@@ -1477,8 +1908,16 @@
         $("btnReset").addEventListener("click", resetTournament);
         $("btnExport").addEventListener("click", exportTournament);
         $("btnWipe").addEventListener("click", resetTotal);
+        $("btnStartTournament").addEventListener("click", createNewRound);
         $("btnGenerateRound").addEventListener("click", createNewRound);
         $("btnFinishTournament").addEventListener("click", finishTournament);
+        $("btnToggleLateReg").addEventListener("click", toggleLateReg);
+        $("btnAddRound").addEventListener("click", () => changeMaxRounds(1));
+        $("btnRemoveRound").addEventListener("click", () => changeMaxRounds(-1));
+        $("btnTimerStart").addEventListener("click", timerStart);
+        $("btnTimerPause").addEventListener("click", timerPause);
+        $("btnTimerReset").addEventListener("click", timerReset);
+        $("btnTimerPlus").addEventListener("click", timerAddFive);
         $("btnAdminLogin").addEventListener("click", adminLogin);
         $("btnAdminLogout").addEventListener("click", adminLogout);
         $("btnLinkIdentity").addEventListener("click", linkIdentity);
@@ -1495,6 +1934,17 @@
             if (drop) { dropPlayer(drop.dataset.drop); return; }
             const rep = e.target.closest("[data-report]");
             if (rep) { reportMatch(rep.dataset.report, rep.dataset.result); return; }
+            const save = e.target.closest("[data-savereport]");
+            if (save) { reportMatchFull(save.dataset.savereport); return; }
+            const vr = e.target.closest("[data-viewround]");
+            if (vr) {
+                const rs = roundsFromMatches();
+                const curNum = rs.length ? rs[rs.length - 1].roundNumber : null;
+                const n = +vr.dataset.viewround;
+                viewedRound = (n === curNum) ? null : n;   // ver actual = quitar filtro
+                renderMatches();
+                return;
+            }
         });
     }
 
@@ -1504,6 +1954,8 @@
     (function init() {
         setupUI();
         applyRoleUI();
+        tickClock();
+        setInterval(tickClock, 1000);   // reloj + cronómetro en vivo
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
