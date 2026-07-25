@@ -147,7 +147,6 @@
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel-accent); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 20px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity .3s; }
         .toast.show { opacity: 1; }
     </style>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1350,7 +1349,10 @@
     ============================================================ */
     async function ensureEstado() {
         const snap = await getDoc(ESTADO_REF);
-        if (!snap.exists()) {
+        // Solo el organizador puede crear el documento de estado (las reglas
+        // bloquean la escritura a los jugadores). Un jugador simplemente
+        // espera a que el admin inicialice el torneo.
+        if (!snap.exists() && isAdmin) {
             await setDoc(ESTADO_REF, {
                 currentRoundNumber: 0, maxRounds: 0, isFinished: false,
                 torneoId: "T" + Date.now(), createdAt: serverTimestamp()
