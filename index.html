@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokémon TCG - Torneo 3 Decks (Sistema Suizo Oficial)</title>
+    <title>Pokémon TCG - Torneo 3 Decks (Firestore + Auth)</title>
     <style>
         :root {
             --bg-color: #0f1115;
@@ -11,8 +11,8 @@
             --panel-accent: #222731;
             --text-main: #f1f3f5;
             --text-muted: #9aa5b5;
-            --accent-yellow: #ffcb05; 
-            --accent-blue: #3b4cca; 
+            --accent-yellow: #ffcb05;
+            --accent-blue: #3b4cca;
             --accent-blue-hover: #2a3aa3;
             --danger: #fa5252;
             --danger-bg: rgba(250, 82, 82, 0.1);
@@ -36,20 +36,27 @@
         header {
             display: flex; justify-content: space-between; align-items: center;
             padding-bottom: 20px; border-bottom: 1px solid var(--border-color);
-            margin-bottom: 25px; flex-wrap: wrap; gap: 15px;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 15px;
         }
 
         .logo-section h1 { color: var(--accent-yellow); font-size: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .logo-section p { color: var(--text-muted); font-size: 14px; }
 
-        .actions-header { display: flex; gap: 10px; }
+        .actions-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+        .role-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .role-admin { background-color: var(--accent-yellow); color: #111; }
+        .role-player { background-color: var(--panel-accent); color: var(--text-muted); border: 1px solid var(--border-color); }
+
+        .conn-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; }
+        .conn-ok { background: var(--success-bg); color: var(--success-color); border: 1px solid var(--success-color); }
+        .conn-off { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
 
         button {
             padding: 10px 16px; font-size: 14px; font-weight: 600;
             border-radius: 6px; border: none; cursor: pointer;
             transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px;
         }
-
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-primary { background-color: var(--accent-blue); color: white; }
@@ -63,6 +70,16 @@
         .btn-success { background-color: var(--success-color); color: white; border: none; }
         .btn-success:hover:not(:disabled) { background-color: #2b8a3e; }
 
+        /* Barra de login del organizador */
+        .admin-bar {
+            background: var(--panel-bg); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 15px; margin-bottom: 20px;
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        }
+        .admin-bar input { flex: 1; min-width: 160px; padding: 9px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; }
+        .admin-bar .hint { font-size: 12px; color: var(--text-muted); width: 100%; }
+        .uid-box { font-family: monospace; font-size: 12px; background: var(--bg-color); padding: 4px 8px; border-radius: 4px; color: var(--accent-yellow); border: 1px dashed var(--border-color); user-select: all; }
+
         .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); overflow-x: auto; }
         .tab { padding: 12px 20px; background: none; color: var(--text-muted); border: none; border-radius: 6px 6px 0 0; font-size: 15px; white-space: nowrap; }
         .tab:hover { color: var(--text-main); background-color: var(--panel-bg); }
@@ -72,13 +89,15 @@
         .panel.active { display: block; }
 
         h2 { margin-bottom: 20px; font-size: 20px; border-left: 4px solid var(--accent-blue); padding-left: 10px; color: #fff; }
+        h3 { margin: 15px 0 10px; color: var(--text-main); }
 
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-main); }
-        input[type="text"], select { width: 100%; padding: 10px 12px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 14px; outline: none; }
-        input[type="text"]:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59, 76, 202, 0.3); }
+        input[type="text"], input[type="date"], input[type="email"], input[type="password"], select { width: 100%; padding: 10px 12px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 14px; outline: none; }
+        input:focus, select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59, 76, 202, 0.3); }
 
         .deck-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .fav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
@@ -91,6 +110,7 @@
         .tier-fun { background-color: #9c27b0; color: white; }
 
         .match-card { background-color: var(--panel-accent); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .match-card.my-table { border: 2px solid var(--accent-yellow); box-shadow: 0 0 12px rgba(255,203,5,0.25); }
         .match-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
         .table-number { background-color: var(--bg-color); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; color: var(--accent-yellow); }
         .match-status { font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 4px; }
@@ -109,22 +129,27 @@
         .deck-order-item strong { color: var(--text-main); }
 
         .match-actions { display: flex; gap: 10px; justify-content: center; border-top: 1px solid var(--border-color); padding-top: 15px; flex-wrap: wrap; }
-        
+        .locked-note { font-size: 12px; color: var(--text-muted); text-align: center; width: 100%; }
+
         .bye-card { background: linear-gradient(135deg, #1a1d24, #222731); border: 1px dashed var(--accent-yellow); padding: 15px; border-radius: 8px; text-align: center; color: var(--accent-yellow); font-weight: 500; }
-        
+
         .alert-box { padding: 12px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; display: none; }
         .alert-warning { background-color: rgba(245, 159, 0, 0.15); border: 1px solid var(--warning-color); color: var(--warning-color); }
         .alert-success { background-color: var(--success-bg); border: 1px solid var(--success-color); color: var(--success-color); }
-        
+
         .buchholz-col { color: #a5b4fc; font-weight: bold; }
 
         .rules-content { color: var(--text-muted); }
         .rules-content li { margin-bottom: 10px; margin-left: 20px; }
         .rules-content strong { color: var(--text-main); }
+
+        .hidden { display: none !important; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel-accent); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 20px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity .3s; }
+        .toast.show { opacity: 1; }
     </style>
-    <!-- Incluir MathJax para renderizado de fórmulas matemáticas -->
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -132,34 +157,92 @@
     <header>
         <div class="logo-section">
             <h1>🏆 Pokémon TCG: Torneo 3 Decks</h1>
-            <p>Motor de Torneo basado en Sistema Suizo Oficial (Tie-breaks Buchholz)</p>
+            <p>Sistema Suizo Oficial (Buchholz) · Tiempo real + Autenticación (Firestore)</p>
         </div>
         <div class="actions-header">
-            <!-- BOTÓN AGREGADO: Nuevo Torneo -->
-            <button class="btn-danger" style="background-color: transparent; border: 1px solid var(--danger);" onclick="resetTournament()">🔄 Nuevo Torneo</button>
-            <button class="btn-secondary" onclick="exportTournament()">💾 Descargar Estado</button>
-            <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📂 Cargar Estado</button>
-            <input type="file" id="importFile" style="display:none" onchange="importTournament(event)">
+            <span id="roleBadge" class="role-badge role-player">👤 Jugador</span>
+            <span id="connBadge" class="conn-badge conn-off">● Conectando…</span>
+            <button class="btn-danger admin-only hidden" style="background-color: transparent; border: 1px solid var(--danger);" id="btnReset">🔄 Nuevo Torneo</button>
+            <button class="btn-secondary admin-only hidden" id="btnExport">💾 Descargar Estado</button>
         </div>
     </header>
 
+    <!-- BARRA DE LOGIN DEL ORGANIZADOR (solo visible con ?admin=true) -->
+    <div id="adminBar" class="admin-bar hidden">
+        <div id="adminLoginForm" style="display:flex; gap:10px; flex-wrap:wrap; width:100%;">
+            <input type="email" id="adminEmail" placeholder="Correo del organizador" autocomplete="username">
+            <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="current-password">
+            <button class="btn-accent" id="btnAdminLogin">🔑 Entrar como Organizador</button>
+            <button class="btn-secondary" id="btnAdminReset" style="background:none; border:none; color:var(--accent-blue); text-decoration:underline; padding:6px;">¿Olvidaste tu contraseña?</button>
+            <p class="hint">Solo el organizador necesita iniciar sesión. Los jugadores entran de forma anónima automáticamente.</p>
+        </div>
+        <div id="adminInfo" class="hidden" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; width:100%;">
+            <span id="adminWho" style="font-weight:600;"></span>
+            <button class="btn-secondary" id="btnAdminLogout">Salir</button>
+            <span class="hint">Tu UID: <span id="adminUid" class="uid-box"></span> — si no tienes permisos de admin, agrega este UID al arreglo <code>adminUids</code> del documento <code>config/app</code> en la consola de Firebase.</span>
+        </div>
+    </div>
+
     <div class="tabs">
-        <button class="tab active" onclick="changeTab('registro')">👥 Registro</button>
-        <button class="tab" onclick="changeTab('rondas')">⚔️ Rondas y Emparejamientos</button>
-        <button class="tab" onclick="changeTab('posiciones')">📊 Tabla de Posiciones</button>
-        <button class="tab" onclick="changeTab('reglas')">📜 Reglas</button>
+        <button class="tab active" data-tab="registro">👥 Registro</button>
+        <button class="tab" data-tab="rondas">⚔️ Rondas y Emparejamientos</button>
+        <button class="tab" data-tab="posiciones">📊 Tabla de Posiciones</button>
+        <button class="tab" data-tab="historial">📈 Historial</button>
+        <button class="tab" data-tab="reglas">📜 Reglas</button>
     </div>
 
     <!-- PESTAÑA: REGISTRO -->
     <div id="registro" class="panel active">
         <h2>Inscripción de Competidores</h2>
-        <div id="registroForm" style="max-width: 600px; margin-bottom: 30px;">
-            <div class="form-group">
-                <label for="playerName">Nombre del Jugador:</label>
-                <input type="text" id="playerName" placeholder="Ejemplo: Red Ketchum">
+        <div id="myPlayerNote" class="alert-box alert-success" style="display:none;"></div>
+
+        <!-- IDENTIDAD DEL JUGADOR (para conservar tu jugador entre dispositivos) -->
+        <div id="identityCard" class="admin-bar" style="margin-bottom:20px;">
+            <div id="identityAnon" style="display:flex; gap:10px; flex-wrap:wrap; width:100%;">
+                <p class="hint" style="margin-bottom:4px;">🔒 <strong>Guarda tu identidad</strong> para recuperar tu jugador y reportar tu mesa desde cualquier teléfono. Sin esto, si cambias de dispositivo o borras datos, perderás el control de tu jugador (el organizador podrá reportar por ti).</p>
+                <input type="email" id="idEmail" placeholder="Tu correo" autocomplete="username">
+                <input type="password" id="idPass" placeholder="Crea/usa una contraseña" autocomplete="current-password">
+                <button class="btn-primary" id="btnLinkIdentity">🔗 Vincular a este jugador</button>
+                <button class="btn-secondary" id="btnPlayerSignIn">Ya tengo cuenta · Iniciar sesión</button>
+                <button class="btn-secondary" id="btnPlayerReset" style="background:none; border:none; color:var(--accent-blue); text-decoration:underline; padding:6px;">¿Olvidaste tu contraseña?</button>
             </div>
-            
-            <label>Configuración de Decks:</label>
+            <div id="identityLogged" class="hidden" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; width:100%;">
+                <span id="identityWho" style="font-weight:600;"></span>
+                <button class="btn-secondary" id="btnPlayerLogout">Cerrar sesión</button>
+            </div>
+        </div>
+        <div id="registroForm" style="max-width: 640px; margin-bottom: 30px;">
+            <h3>Datos del jugador</h3>
+            <div class="form-group">
+                <label for="playerName">Nombre completo:</label>
+                <input type="text" id="playerName" placeholder="Ej: Roberto Granados">
+            </div>
+            <div class="fav-grid">
+                <div class="form-group" style="margin:0;">
+                    <label for="playerNick">Nickname:</label>
+                    <input type="text" id="playerNick" placeholder="Ej: RedKetchum">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label for="playerBday">Fecha de cumpleaños:</label>
+                    <input type="date" id="playerBday">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="favPokemon">Pokémon favorito:</label>
+                <input type="text" id="favPokemon" placeholder="Ej: Charizard">
+            </div>
+            <div class="form-group">
+                <label>Top 5 Pokémon favoritos (opcional):</label>
+                <div class="fav-grid">
+                    <input type="text" id="top1" placeholder="1º">
+                    <input type="text" id="top2" placeholder="2º">
+                    <input type="text" id="top3" placeholder="3º">
+                    <input type="text" id="top4" placeholder="4º">
+                    <input type="text" id="top5" placeholder="5º">
+                </div>
+            </div>
+
+            <h3>Configuración de Decks</h3>
             <div class="deck-grid">
                 <input type="text" id="deck1Name" placeholder="Mazo 1">
                 <select id="deck1Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S (Máx. 1)</option><option value="FUN">Tier FUN</option></select>
@@ -172,14 +255,15 @@
                 <input type="text" id="deck3Name" placeholder="Mazo 3">
                 <select id="deck3Tier"><option value="FUN" selected>Tier FUN</option><option value="Tier S">Tier S</option><option value="Tier 1-4">Tier 1 a 4</option></select>
             </div>
-            <button class="btn-accent" style="margin-top: 10px;" onclick="registerPlayer()">➕ Añadir Jugador</button>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">Nota: El registro se bloquea automáticamente al iniciar la primera ronda.</p>
+            <button class="btn-accent" style="margin-top: 10px;" id="btnRegister">➕ Añadir Jugador</button>
+            <button class="btn-secondary hidden" style="margin-top: 10px;" id="btnPrefill">🔄 Usar mis datos guardados</button>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">El registro se bloquea automáticamente al iniciar la primera ronda. En tu teléfono quedas vinculado como el jugador que registres.</p>
         </div>
 
         <h2>Lista de Inscritos (<span id="countDisplay">0</span>)</h2>
         <table id="playersTable">
             <thead>
-                <tr><th>Nombre</th><th>Mazo 1</th><th>Mazo 2</th><th>Mazo 3</th><th>Estado</th><th>Acciones</th></tr>
+                <tr><th>Nombre</th><th>Nick</th><th>Mazo 1</th><th>Mazo 2</th><th>Mazo 3</th><th>Estado</th><th class="admin-only hidden">Acciones</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -189,16 +273,16 @@
     <div id="rondas" class="panel">
         <div id="roundAlert" class="alert-box alert-warning"></div>
         <div id="finishedAlert" class="alert-box alert-success">🏆 ¡EL TORNEO HA FINALIZADO! REVISA LA TABLA DE POSICIONES.</div>
-        
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <h2 id="roundTitle" style="margin-bottom: 0;">Ronda Actual: Ninguna</h2>
             <div style="display: flex; gap: 10px;">
-                <button id="btnGenerateRound" class="btn-accent" onclick="createNewRound()">⚔️ Generar Siguiente Ronda</button>
-                <button id="btnFinishTournament" class="btn-success" style="display: none;" onclick="finishTournament()">🏆 Finalizar torneo</button>
+                <button id="btnGenerateRound" class="btn-accent admin-only hidden">⚔️ Generar Siguiente Ronda</button>
+                <button id="btnFinishTournament" class="btn-success admin-only hidden" style="display: none;">🏆 Finalizar torneo</button>
             </div>
         </div>
         <div id="matchesWrapper">
-            <p style="color: var(--text-muted); text-align: center;">Inscribe jugadores y presiona "Generar Ronda" para iniciar el algoritmo Suizo.</p>
+            <p style="color: var(--text-muted); text-align: center;">Esperando a que el organizador genere la primera ronda…</p>
         </div>
     </div>
 
@@ -211,18 +295,63 @@
         <table id="standingsTable">
             <thead>
                 <tr>
-                    <th>Pos</th>
-                    <th>Jugador</th>
-                    <th>Puntos</th>
+                    <th>Pos</th><th>Jugador</th><th>Puntos</th>
                     <th title="Suma de los puntos de los oponentes a los que se enfrentó">Buchholz ℹ️</th>
-                    <th>PG</th>
-                    <th>PE</th>
-                    <th>PP</th>
-                    <th>Condición</th>
+                    <th>PG</th><th>PE</th><th>PP</th><th>Condición</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
+    </div>
+
+    <!-- PESTAÑA: HISTORIAL -->
+    <div id="historial" class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <h2 style="margin-bottom:0;">📈 Historial y Estadísticas</h2>
+            <button class="btn-secondary" id="btnExportCsv">⬇️ Exportar CSV</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin:12px 0 15px;">
+            Datos acumulados de torneos finalizados. Cada jugador conserva su historial si vincula su identidad (mismo correo entre torneos).
+        </p>
+        <div id="statsKpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:25px;"></div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; margin-bottom:30px;">
+            <div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:15px;">
+                <h3 style="margin-top:0;">Puntos totales por jugador</h3>
+                <canvas id="chartPoints" height="220"></canvas>
+            </div>
+            <div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:15px;">
+                <h3 style="margin-top:0;">Decks más usados</h3>
+                <canvas id="chartDecks" height="220"></canvas>
+            </div>
+            <div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:15px;">
+                <h3 style="margin-top:0;">Resultados globales (V/E/D)</h3>
+                <canvas id="chartWLD" height="220"></canvas>
+            </div>
+        </div>
+
+        <h3>🏅 Ranking histórico de jugadores</h3>
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Jugador</th><th>Torneos</th><th title="Mejor posición lograda">Mejor Pos</th>
+                    <th>Pts tot.</th><th>V</th><th>E</th><th>D</th><th>Pokémon fav.</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3 style="margin-top:30px;">🃏 Decks más usados</h3>
+        <table id="deckRankTable">
+            <thead><tr><th>#</th><th>Deck</th><th>Veces registrado</th></tr></thead>
+            <tbody></tbody>
+        </table>
+
+        <h3 style="margin-top:30px;">🔎 Detalle por jugador</h3>
+        <div class="form-group" style="max-width:360px;">
+            <select id="historyPlayerSelect"><option value="">— Elige un jugador —</option></select>
+        </div>
+        <div id="historyDetail"></div>
     </div>
 
     <!-- PESTAÑA: REGLAS -->
@@ -232,398 +361,556 @@
             <h3>Formato de Creación de Equipos</h3>
             <ul>
                 <li>Cada jugador debe inscribirse con exactamente <strong>3 mazos diferentes</strong>.</li>
-                <li><strong>Regla de Tiers:</strong> Solo se permite registrar un máximo de <strong>un (1) mazo Tier S</strong> por jugador. Los demás deben ser catalogados como "Tier 1-4" o "FUN".</li>
+                <li><strong>Regla de Tiers:</strong> máximo <strong>un (1) mazo Tier S</strong> por jugador.</li>
             </ul>
-
             <hr style="border: 1px solid var(--border-color); margin: 20px 0;">
-
             <h3>Mecánica de Enfrentamientos</h3>
             <ul>
-                <li>Al generar una ronda, el sistema <strong>sorteará aleatoriamente el orden</strong> en el que cada jugador deberá usar sus 3 mazos (Juego 1, Juego 2 y Juego 3).</li>
-                <li>Los jugadores deben jugar los enfrentamientos respetando el orden de mazos dictado por la aplicación en su mesa correspondiente.</li>
+                <li>Al generar una ronda, el sistema <strong>sorteará aleatoriamente el orden</strong> de los 3 mazos (Juego 1, 2 y 3).</li>
+                <li>Los jugadores deben respetar el orden de mazos dictado por la aplicación en su mesa.</li>
             </ul>
-
             <hr style="border: 1px solid var(--border-color); margin: 20px 0;">
-
             <h3>Sistema de Torneo (Suizo Oficial)</h3>
             <ul>
-                <li><strong>Cantidad de Rondas:</strong> El torneo no tiene rondas infinitas. El número total de rondas se calcula matemáticamente en función de la cantidad de jugadores inscritos para asegurar un único invicto. La fórmula aplicada es $$Rondas = \lceil \log_2(Jugadores) \rceil$$.</li>
-                <li><strong>Emparejamientos:</strong> Ningún jugador puede enfrentarse al mismo oponente dos veces. El sistema empareja a los jugadores con puntajes iguales o similares.</li>
-                <li><strong>Jugadores Impares (BYE):</strong> Si hay un número impar de jugadores activos, a un jugador aleatorio de la parte baja de la tabla se le otorgará un "BYE" (victoria automática y 3 puntos). Un jugador no puede recibir más de un BYE en el torneo.</li>
+                <li><strong>Cantidad de Rondas:</strong> $$Rondas = \lceil \log_2(Jugadores) \rceil$$.</li>
+                <li><strong>Emparejamientos:</strong> ningún jugador se enfrenta al mismo oponente dos veces (salvo que no exista alternativa).</li>
+                <li><strong>BYE (impares):</strong> victoria automática y 3 puntos, máximo un BYE por jugador.</li>
             </ul>
-
             <hr style="border: 1px solid var(--border-color); margin: 20px 0;">
-
             <h3>Puntuación y Desempates</h3>
             <ul>
-                <li><strong>Victoria:</strong> 3 Puntos.</li>
-                <li><strong>Empate:</strong> 1 Punto.</li>
-                <li><strong>Derrota:</strong> 0 Puntos.</li>
-                <li><strong>Desempate (Sistema Buchholz):</strong> Si dos jugadores tienen los mismos puntos, el primer criterio de desempate será el Sistema Buchholz. Este sistema suma todos los puntos finales obtenidos por los oponentes a los que el jugador se enfrentó durante el torneo. Se premia a quien haya tenido un "camino más difícil".</li>
+                <li><strong>Victoria:</strong> 3 Puntos · <strong>Empate:</strong> 1 Punto · <strong>Derrota:</strong> 0 Puntos.</li>
+                <li><strong>Buchholz:</strong> suma de los puntos finales de los oponentes enfrentados.</li>
             </ul>
         </div>
     </div>
 </div>
 
-<script>
-    // ESTADO GENERAL DE LA APP
-    let state = {
-        players: [],
-        rounds: [],
-        currentRoundNumber: 0,
-        maxRounds: 0, 
-        isFinished: false
+<div id="toast" class="toast"></div>
+
+<script type="module">
+    /* ============================================================
+       FIREBASE INIT (SDK modular v10.8.0 vía CDN oficial)
+    ============================================================ */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+        getFirestore, collection, collectionGroup, doc, setDoc, getDoc, getDocs,
+        updateDoc, onSnapshot, writeBatch, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import {
+        getAuth, onAuthStateChanged, signInAnonymously,
+        signInWithEmailAndPassword, signOut,
+        EmailAuthProvider, linkWithCredential, sendPasswordResetEmail
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyASyjQoMQiSYk97GMy7Gj5r9RTDK_eCyRg",
+        authDomain: "apppokemon-4be6a.firebaseapp.com",
+        projectId: "apppokemon-4be6a",
+        storageBucket: "apppokemon-4be6a.firebasestorage.app",
+        messagingSenderId: "526579813204",
+        appId: "1:526579813204:web:cf7e1891173a4b8cbd16c1",
+        measurementId: "G-PNGGDB5QV8"
     };
 
-    const uid = () => '_' + Math.random().toString(36).substr(2, 9);
+    const app  = initializeApp(firebaseConfig);
+    const db   = getFirestore(app);
+    const auth = getAuth(app);
 
-    function changeTab(tabId) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-        if (tabId === 'posiciones') renderStandings();
+    // Referencias
+    const ESTADO_REF    = doc(db, "torneo_estado", "actual");
+    const CONFIG_REF    = doc(db, "config", "app");
+    const JUGADORES_COL = collection(db, "jugadores");
+    const RONDAS_COL    = collection(db, "rondas");
+    const PERFILES_COL  = collection(db, "perfiles");
+
+    /* ============================================================
+       ESTADO EN MEMORIA
+    ============================================================ */
+    const params    = new URLSearchParams(location.search);
+    const showAdminUI = params.get("admin") === "true"; // solo revela el login; NO otorga permisos
+    const LS_PLAYER = "pkmn_my_player_id";
+    let myPlayerId  = localStorage.getItem(LS_PLAYER);
+
+    let currentUser = null;
+    let isAdmin     = false;
+
+    let estadoCache    = { currentRoundNumber: 0, maxRounds: 0, isFinished: false, torneoId: null };
+    let adminCache     = { adminUids: [] };
+    let jugadoresCache = {};   // { id: {..} }
+    let matchesCache   = [];   // [ {id, matchId, roundNumber, ...} ]  (collectionGroup)
+    let perfilesCache  = [];   // [ {id, ...perfil} ]  (para estadísticas)
+    let derived        = { players: [], byId: {} };
+
+    let myPerfilCache  = null; // perfil del usuario actual (para autocompletar)
+    let myPerfilUnsub  = null; // desuscriptor del listener de mi perfil
+    let prefilledOnce  = false;
+
+    const uid  = () => "_" + Math.random().toString(36).substr(2, 9);
+    const slug = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || ("jugador-" + Date.now());
+    const $ = (id) => document.getElementById(id);
+
+    function toast(msg) {
+        const t = $("toast"); t.textContent = msg; t.classList.add("show");
+        clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
     }
 
-    // --- NUEVO TORNEO ---
-    function resetTournament() {
-        if (confirm('⚠️ ¿Estás seguro de que deseas comenzar un nuevo torneo? Se perderán todos los datos actuales (jugadores, rondas y posiciones). Te recomendamos "Descargar Estado" antes de continuar.')) {
-            // Restablecer el estado
-            state = {
-                players: [],
-                rounds: [],
-                currentRoundNumber: 0,
-                maxRounds: 0, 
-                isFinished: false
-            };
-            
-            // Limpiar almacenamiento local
-            localStorage.removeItem('pkmn_tcg_swiss');
-            
-            // Habilitar nuevamente el formulario de registro
-            document.getElementById('registroForm').style.opacity = '1';
-            document.getElementById('registroForm').style.pointerEvents = 'auto';
-
-            // Restaurar visualmente la pestaña de rondas
-            document.getElementById('matchesWrapper').innerHTML = '<p style="color: var(--text-muted); text-align: center;">Inscribe jugadores y presiona "Generar Ronda" para iniciar el algoritmo Suizo.</p>';
-            document.getElementById('roundTitle').innerText = 'Ronda Actual: Ninguna';
-            document.getElementById('roundAlert').style.display = 'none';
-            document.getElementById('finishedAlert').style.display = 'none';
-            
-            let btnGen = document.getElementById('btnGenerateRound');
-            btnGen.style.display = 'inline-flex';
-            btnGen.disabled = false;
-            btnGen.innerText = "⚔️ Generar Siguiente Ronda";
-
-            let btnFinish = document.getElementById('btnFinishTournament');
-            btnFinish.style.display = 'none';
-            btnFinish.disabled = false;
-            btnFinish.innerText = "🏆 Finalizar torneo";
-            
-            // Actualizar el resto de pestañas visualmente
-            renderPlayers();
-            renderStandings();
-            
-            // Navegar automáticamente a la pestaña de registro
-            document.querySelector('.tab:nth-child(1)').click();
-            
-            alert('✅ Nuevo torneo iniciado con éxito. Ya puedes registrar a los jugadores.');
-        }
+    /* ============================================================
+       ORGANIZACIÓN DE PARTIDAS (un documento por match)
+       rondas/{rN}/matches/{matchId}
+    ============================================================ */
+    function roundsFromMatches() {
+        const map = {};
+        matchesCache.forEach(m => { (map[m.roundNumber] = map[m.roundNumber] || []).push(m); });
+        return Object.keys(map)
+            .map(n => ({ roundNumber: +n, matches: map[n] }))
+            .sort((a, b) => a.roundNumber - b.roundNumber);
+    }
+    function lastRound() {
+        const rs = roundsFromMatches();
+        return rs.length ? rs[rs.length - 1] : null;
     }
 
-    // --- REGISTRO ---
-    function registerPlayer() {
-        if (state.currentRoundNumber > 0) {
-            alert('❌ El torneo ya ha comenzado. No se pueden inscribir más jugadores.');
-            return;
-        }
+    /* ============================================================
+       DERIVACIÓN: puntos/PG/PE/PP/Buchholz/BYE se CALCULAN desde
+       jugadores + partidas. Nadie escribe contadores.
+    ============================================================ */
+    function buildDerived() {
+        const players = Object.values(jugadoresCache).map(p => ({
+            ...p, points: 0, wins: 0, ties: 0, losses: 0,
+            buchholz: 0, hadBye: false, history: []
+        }));
+        const byId = Object.fromEntries(players.map(p => [p.id, p]));
 
-        const nameInput = document.getElementById('playerName');
-        const pName = nameInput.value.trim();
-        const decks = [
-            { name: document.getElementById('deck1Name').value.trim(), tier: document.getElementById('deck1Tier').value },
-            { name: document.getElementById('deck2Name').value.trim(), tier: document.getElementById('deck2Tier').value },
-            { name: document.getElementById('deck3Name').value.trim(), tier: document.getElementById('deck3Tier').value }
-        ];
-
-        if (!pName || decks.some(d => !d.name)) {
-            alert('❌ Debes ingresar el nombre del jugador y los 3 decks.'); return;
-        }
-
-        if (decks.filter(d => d.tier === 'Tier S').length > 1) {
-            alert('❌ Regla Infringida: Solo se permite 1 mazo Tier S máximo por jugador.'); return;
-        }
-
-        state.players.push({
-            id: uid(), name: pName, decks: decks, active: true,
-            points: 0, buchholz: 0, wins: 0, ties: 0, losses: 0,
-            history: [], hadBye: false
-        });
-
-        nameInput.value = '';
-        document.getElementById('deck1Name').value = ''; document.getElementById('deck2Name').value = ''; document.getElementById('deck3Name').value = '';
-        saveToLocalStorage(); renderPlayers();
-    }
-
-    function dropPlayer(id) {
-        if (confirm('¿Retirar (Drop) a este jugador? Ya no será emparejado.')) {
-            const player = state.players.find(p => p.id === id);
-            if (player) player.active = false;
-            saveToLocalStorage(); renderPlayers(); renderStandings();
-        }
-    }
-
-    function renderPlayers() {
-        const tbody = document.querySelector('#playersTable tbody');
-        tbody.innerHTML = '';
-        state.players.forEach(p => {
-            tbody.innerHTML += `
-                <tr>
-                    <td><strong>${p.name}</strong></td>
-                    <td>${p.decks[0].name} <span class="tier-badge ${getTierClass(p.decks[0].tier)}">${p.decks[0].tier}</span></td>
-                    <td>${p.decks[1].name} <span class="tier-badge ${getTierClass(p.decks[1].tier)}">${p.decks[1].tier}</span></td>
-                    <td>${p.decks[2].name} <span class="tier-badge ${getTierClass(p.decks[2].tier)}">${p.decks[2].tier}</span></td>
-                    <td style="color:${p.active ? 'var(--success-color)' : 'var(--danger)'}">${p.active ? 'Activo' : 'Drop'}</td>
-                    <td>${p.active ? `<button class="btn-danger" style="padding:4px 8px; font-size:12px;" onclick="dropPlayer('${p.id}')">Drop</button>` : '-'}</td>
-                </tr>
-            `;
-        });
-        document.getElementById('countDisplay').innerText = state.players.length;
-        
-        // Bloquear panel si ya inició
-        if(state.currentRoundNumber > 0) {
-            document.getElementById('registroForm').style.opacity = '0.5';
-            document.getElementById('registroForm').style.pointerEvents = 'none';
-        }
-    }
-
-    function getTierClass(tier) {
-        if (tier === 'Tier S') return 'tier-s';
-        if (tier === 'FUN') return 'tier-fun';
-        return 'tier-normal';
-    }
-
-    // --- SISTEMA SUIZO: BUCHHOLZ ---
-    function calculateBuchholz() {
-        // Valor virtual para BYEs: promedio de puntos de todos los jugadores activos
-        const activePlayers = state.players.filter(p => p.active);
-        const avgPoints = activePlayers.length > 0
-            ? activePlayers.reduce((sum, p) => sum + p.points, 0) / activePlayers.length
-            : 0;
-
-        state.players.forEach(p => {
-            p.buchholz = 0;
-            p.history.forEach(opId => {
-                if (opId === 'BYE') {
-                    p.buchholz += avgPoints; // Oponente virtual con puntos promedio
-                } else {
-                    let oponente = state.players.find(x => x.id === opId);
-                    if (oponente) p.buchholz += oponente.points;
+        roundsFromMatches().forEach(r => {
+            r.matches.forEach(m => {
+                const p1 = byId[m.p1Id];
+                if (!m.p2Id) { // BYE
+                    if (p1) { p1.points += 3; p1.wins += 1; p1.hadBye = true; p1.history.push("BYE"); }
+                    return;
+                }
+                const p2 = byId[m.p2Id];
+                if (p1 && p2) {
+                    p1.history.push(p2.id);
+                    p2.history.push(p1.id);
+                    if (m.completed) {
+                        if (m.winner === "p1") { p1.points += 3; p1.wins++; p2.losses++; }
+                        else if (m.winner === "p2") { p2.points += 3; p2.wins++; p1.losses++; }
+                        else if (m.winner === "tie") { p1.points += 1; p2.points += 1; p1.ties++; p2.ties++; }
+                    }
                 }
             });
         });
+
+        const active = players.filter(p => p.active);
+        const avg = active.length ? active.reduce((s, p) => s + p.points, 0) / active.length : 0;
+        players.forEach(p => {
+            p.buchholz = 0;
+            p.history.forEach(op => {
+                if (op === "BYE") p.buchholz += avg;
+                else { const o = byId[op]; if (o) p.buchholz += o.points; }
+            });
+            p.buchholz = Math.round(p.buchholz * 100) / 100;
+        });
+
+        derived = { players, byId };
+        return derived;
     }
 
-    // --- ALGORITMO DE RONDAS ---
-    function shuffle(array) {
-        const newArray = [...array];
-        for (let i = newArray.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-        }
-        return newArray;
-    }
-
-    function createNewRound() {
-        if (state.isFinished) return;
-
-        let activePlayers = state.players.filter(p => p.active);
-
-        // Validaciones iniciales
-        if (state.currentRoundNumber === 0) {
-            if (activePlayers.length < 2) {
-                alert('❌ Error: Necesitas al menos 2 jugadores activos para el torneo.'); return;
-            }
-            // FÓRMULA SUIZA: Máximo de rondas
-            state.maxRounds = Math.ceil(Math.log2(activePlayers.length));
-        }
-
-        if (state.currentRoundNumber > 0) {
-            const lastRound = state.rounds[state.rounds.length - 1];
-            if (lastRound.some(m => !m.completed)) {
-                alert('❌ Faltan resultados: Termina la ronda actual antes de generar la siguiente.'); return;
-            }
-        }
-
-        if (state.currentRoundNumber >= state.maxRounds) {
-            alert('El torneo ha alcanzado el límite de rondas calculadas.'); return;
-        }
-
-        state.currentRoundNumber++;
-        let roundMatches = [];
-        
-        // Actualizar Buchholz antes de ordenar para emparejar bien
-        calculateBuchholz();
-        
-        activePlayers.sort((a, b) => {
+    function sortStandings(arr) {
+        return [...arr].sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
             if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
             return b.wins - a.wins;
         });
+    }
 
-        let pool = [...activePlayers];
+    /* ============================================================
+       PESTAÑAS
+    ============================================================ */
+    function changeTab(tabId, btn) {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+        $(tabId).classList.add("active");
+    }
 
-        // Lógica de BYE (Impares)
+    /* ============================================================
+       REGISTRO
+    ============================================================ */
+    async function registerPlayer() {
+        if (!currentUser) { toast("Conectando… intenta de nuevo en un segundo"); return; }
+        if (estadoCache.currentRoundNumber > 0) {
+            alert("❌ El torneo ya ha comenzado. No se pueden inscribir más jugadores.");
+            return;
+        }
+        const pName = $("playerName").value.trim();
+        const nick  = $("playerNick").value.trim();
+        const bday  = $("playerBday").value;
+        const favP  = $("favPokemon").value.trim();
+        const topPokemons = ["top1","top2","top3","top4","top5"].map(i => $(i).value.trim()).filter(Boolean);
+        const decks = [
+            { name: $("deck1Name").value.trim(), tier: $("deck1Tier").value },
+            { name: $("deck2Name").value.trim(), tier: $("deck2Tier").value },
+            { name: $("deck3Name").value.trim(), tier: $("deck3Tier").value }
+        ];
+
+        if (!pName || decks.some(d => !d.name)) { alert("❌ Ingresa el nombre del jugador y los 3 decks."); return; }
+        if (decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S por jugador."); return; }
+
+        const id = uid();
+        // Clave de perfil = uid del dueño (estable y sin colisiones de nick).
+        const profileId = currentUser.uid;
+
+        const player = {
+            id, name: pName, nick, birthday: bday || "",
+            favPokemon: favP, topPokemons, decks,
+            active: true, profileId,
+            ownerUid: currentUser.uid,     // dueño = quien registra (para permisos)
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            await setDoc(doc(JUGADORES_COL, id), player);
+            await setDoc(doc(PERFILES_COL, profileId), {
+                name: pName, nick, birthday: bday || "",
+                favPokemon: favP, topPokemons,
+                decksUsados: decks,   // {name, tier} para restaurar tier al re-inscribirse
+                lastTorneoId: estadoCache.torneoId,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+
+            if (!myPlayerId) { myPlayerId = id; localStorage.setItem(LS_PLAYER, id); }
+
+            ["playerName","playerNick","playerBday","favPokemon","top1","top2","top3","top4","top5","deck1Name","deck2Name","deck3Name"]
+                .forEach(i => { $(i).value = ""; });
+            toast("✅ Jugador registrado");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al guardar en Firestore: " + e.message);
+        }
+    }
+
+    async function dropPlayer(id) {
+        if (!isAdmin) return;
+        if (confirm("¿Retirar (Drop) a este jugador? Ya no será emparejado.")) {
+            try { await updateDoc(doc(JUGADORES_COL, id), { active: false }); }
+            catch (e) { alert("❌ Error: " + e.message); }
+        }
+    }
+
+    /* ============================================================
+       ALGORITMO DE RONDAS (solo admin)
+    ============================================================ */
+    function shuffle(array) {
+        const a = [...array];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function findPairings(candidates) {
+        if (candidates.length === 0) return [];
+        const p1 = candidates[0];
+        const rest = candidates.slice(1);
+        for (let i = 0; i < rest.length; i++) {
+            if (!p1.history.includes(rest[i].id)) {
+                const sub = findPairings(rest.filter((_, idx) => idx !== i));
+                if (sub !== null) return [{ p1, p2: rest[i] }, ...sub];
+            }
+        }
+        for (let i = 0; i < rest.length; i++) {
+            const sub = findPairings(rest.filter((_, idx) => idx !== i));
+            if (sub !== null) return [{ p1, p2: rest[i] }, ...sub];
+        }
+        return null;
+    }
+
+    async function createNewRound() {
+        if (!isAdmin) return;
+        if (estadoCache.isFinished) return;
+
+        const { players } = buildDerived();
+        let active = players.filter(p => p.active);
+
+        let maxRounds = estadoCache.maxRounds;
+        if (estadoCache.currentRoundNumber === 0) {
+            if (active.length < 2) { alert("❌ Necesitas al menos 2 jugadores activos."); return; }
+            maxRounds = Math.ceil(Math.log2(active.length));
+        } else {
+            const last = lastRound();
+            if (last && last.matches.some(m => !m.completed)) {
+                alert("❌ Faltan resultados: termina la ronda actual antes de generar la siguiente."); return;
+            }
+            if (estadoCache.currentRoundNumber >= maxRounds) {
+                alert("El torneo ya alcanzó el límite de rondas calculadas."); return;
+            }
+        }
+
+        active = sortStandings(active);
+        let pool = [...active];
+        const roundNumber = estadoCache.currentRoundNumber + 1;
+        const roundMatches = [];
+
+        // BYE para impares
         if (pool.length % 2 !== 0) {
             let byeIndex = pool.length - 1;
-            while (byeIndex >= 0 && pool[byeIndex].hadBye) { byeIndex--; }
-            if (byeIndex < 0) byeIndex = pool.length - 1; // Fallback extremo
-
-            const byePlayer = pool.splice(byeIndex, 1)[0];
-            byePlayer.hadBye = true;
-            byePlayer.points += 3; byePlayer.wins += 1;
-            byePlayer.history.push('BYE'); // Registrar BYE para cálculo de Buchholz
-
+            while (byeIndex >= 0 && pool[byeIndex].hadBye) byeIndex--;
+            if (byeIndex < 0) byeIndex = pool.length - 1;
+            const bp = pool.splice(byeIndex, 1)[0];
             roundMatches.push({
-                matchId: uid(), p1Id: byePlayer.id, p2Id: null,
-                p1DeckOrder: [], p2DeckOrder: [], completed: true, winner: 'p1'
+                matchId: uid(), roundNumber,
+                p1Id: bp.id, p2Id: null,
+                p1OwnerUid: bp.ownerUid || null, p2OwnerUid: null,
+                p1DeckOrder: [], p2DeckOrder: [], completed: true, winner: "p1"
             });
         }
 
-        // --- EMPAREJAMIENTO CON BACKTRACKING ---
-        // Intenta construir una lista completa de parejas sin rematches.
-        // Si no existe solución perfecta (ej. drops extremos), fuerza el rematch mínimo necesario.
-        function findPairings(candidates) {
-            if (candidates.length === 0) return [];
-
-            const p1 = candidates[0];
-            const rest = candidates.slice(1);
-
-            // Primero intenta con oponentes no enfrentados (en orden: mejor puntaje primero)
-            for (let i = 0; i < rest.length; i++) {
-                if (!p1.history.includes(rest[i].id)) {
-                    const remaining = rest.filter((_, idx) => idx !== i);
-                    const subResult = findPairings(remaining);
-                    if (subResult !== null) {
-                        return [{ p1, p2: rest[i] }, ...subResult];
-                    }
-                }
-            }
-
-            // Fallback: fuerza rematch si no existe solución sin él
-            for (let i = 0; i < rest.length; i++) {
-                const remaining = rest.filter((_, idx) => idx !== i);
-                const subResult = findPairings(remaining);
-                if (subResult !== null) {
-                    console.warn(`Rematch forzado (sin alternativa): ${p1.name} vs ${rest[i].name}`);
-                    return [{ p1, p2: rest[i] }, ...subResult];
-                }
-            }
-
-            return null; // No debería ocurrir con pool de tamaño par
-        }
-
-        const pairings = findPairings(pool);
-        (pairings || []).forEach(({ p1, p2 }) => {
-            p1.history.push(p2.id);
-            p2.history.push(p1.id);
-
+        (findPairings(pool) || []).forEach(({ p1, p2 }) => {
             roundMatches.push({
-                matchId: uid(),
+                matchId: uid(), roundNumber,
                 p1Id: p1.id, p2Id: p2.id,
+                p1OwnerUid: p1.ownerUid || null, p2OwnerUid: p2.ownerUid || null,
                 p1DeckOrder: shuffle(p1.decks), p2DeckOrder: shuffle(p2.decks),
                 completed: false, winner: null
             });
         });
 
-        state.rounds.push(roundMatches);
-
-        saveToLocalStorage();
-        renderMatches();
-        renderPlayers(); // Para bloquear formulario si es ronda 1
+        try {
+            const batch = writeBatch(db);
+            batch.set(doc(db, "rondas", "r" + roundNumber), { roundNumber, createdAt: serverTimestamp() });
+            roundMatches.forEach(m => {
+                batch.set(doc(db, "rondas", "r" + roundNumber, "matches", m.matchId), m);
+            });
+            batch.update(ESTADO_REF, { currentRoundNumber: roundNumber, maxRounds });
+            await batch.commit();
+            toast("⚔️ Ronda " + roundNumber + " generada");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al generar ronda: " + e.message);
+        }
     }
 
-    function reportMatch(matchId, result) {
-        const currentRound = state.rounds[state.currentRoundNumber - 1];
-        const match = currentRound.find(m => m.matchId === matchId);
+    // Reportar resultado: escritura ATÓMICA a un solo documento => sin carrera
+    async function reportMatch(matchId, result) {
+        const match = matchesCache.find(m => m.matchId === matchId);
         if (!match) return;
 
-        const p1 = state.players.find(p => p.id === match.p1Id);
-        const p2 = state.players.find(p => p.id === match.p2Id);
+        const isMine = currentUser && (match.p1OwnerUid === currentUser.uid || match.p2OwnerUid === currentUser.uid);
+        if (!isAdmin && !isMine) { toast("🔒 Solo puedes reportar tu propia mesa"); return; }
+        if (estadoCache.isFinished && !isAdmin) { toast("🔒 El torneo ya finalizó"); return; }
 
-        if (match.completed) { // Revertir si edita
-            if (match.winner === 'p1') { p1.points -= 3; p1.wins--; p2.losses--; }
-            else if (match.winner === 'p2') { p2.points -= 3; p2.wins--; p1.losses--; }
-            else if (match.winner === 'tie') { p1.points -= 1; p2.points -= 1; p1.ties--; p2.ties--; }
+        try {
+            await updateDoc(
+                doc(db, "rondas", "r" + match.roundNumber, "matches", match.matchId),
+                { completed: true, winner: result }
+            );
+            toast("✅ Resultado reportado");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al reportar: " + e.message);
         }
+    }
 
-        match.completed = true;
-        match.winner = result;
+    async function finishTournament() {
+        if (!isAdmin) return;
+        const last = lastRound();
+        if (!last || last.matches.some(m => !m.completed)) {
+            alert("❌ Hay partidos sin reportar. Completa todos los resultados."); return;
+        }
+        try {
+            await updateDoc(ESTADO_REF, { isFinished: true });
 
-        if (result === 'p1') { p1.points += 3; p1.wins++; p2.losses++; }
-        else if (result === 'p2') { p2.points += 3; p2.wins++; p1.losses++; }
-        else if (result === 'tie') { p1.points += 1; p1.ties++; p2.points += 1; p2.ties++; }
+            const { players } = buildDerived();
+            const standings = sortStandings(players);
+            const batch = writeBatch(db);
+            const tKey = estadoCache.torneoId || "t";
+            standings.forEach((p, idx) => {
+                if (!p.profileId) return;
+                const entry = {
+                    torneoId: estadoCache.torneoId,
+                    fecha: new Date().toISOString().slice(0, 10),
+                    posicion: idx + 1,
+                    puntos: p.points, buchholz: p.buchholz,
+                    victorias: p.wins, empates: p.ties, derrotas: p.losses,
+                    decks: (p.decks || []).map(d => d.name),
+                    activo: p.active
+                };
+                batch.set(doc(PERFILES_COL, p.profileId), {
+                    ["historial." + tKey]: entry,
+                    ultimoResultado: entry,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+            });
+            await batch.commit();
 
-        saveToLocalStorage(); renderMatches();
+            toast("🎉 Torneo finalizado y guardado en historial");
+            changeTab("posiciones", document.querySelector('.tab[data-tab="posiciones"]'));
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al finalizar: " + e.message);
+        }
+    }
+
+    /* ============================================================
+       NUEVO TORNEO (solo admin) — conserva PERFILES/historial
+    ============================================================ */
+    async function resetTournament() {
+        if (!isAdmin) return;
+        if (!confirm('⚠️ ¿Comenzar un NUEVO torneo? Se borran jugadores y rondas actuales (los PERFILES e historial se conservan). Usa "Descargar Estado" antes si quieres respaldo.')) return;
+        try {
+            const batch = writeBatch(db);
+            (await getDocs(collectionGroup(db, "matches"))).forEach(d => batch.delete(d.ref));
+            (await getDocs(RONDAS_COL)).forEach(d => batch.delete(d.ref));
+            (await getDocs(JUGADORES_COL)).forEach(d => batch.delete(d.ref));
+            batch.set(ESTADO_REF, {
+                currentRoundNumber: 0, maxRounds: 0, isFinished: false,
+                torneoId: "T" + Date.now(), createdAt: serverTimestamp()
+            });
+            await batch.commit();
+
+            localStorage.removeItem(LS_PLAYER);
+            myPlayerId = null;
+            toast("✅ Nuevo torneo iniciado");
+            changeTab("registro", document.querySelector('.tab[data-tab="registro"]'));
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al reiniciar: " + e.message);
+        }
+    }
+
+    function exportTournament() {
+        const { players } = buildDerived();
+        const snapshot = {
+            estado: estadoCache,
+            standings: sortStandings(players),
+            rondas: roundsFromMatches(),
+            exportadoEn: new Date().toISOString()
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot, null, 2));
+        const dl = document.createElement("a");
+        dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", "torneo_pokemon_" + (estadoCache.torneoId || "actual") + ".json");
+        document.body.appendChild(dl); dl.click(); dl.remove();
+    }
+
+    /* ============================================================
+       RENDER
+    ============================================================ */
+    function getTierClass(tier) {
+        if (tier === "Tier S") return "tier-s";
+        if (tier === "FUN") return "tier-fun";
+        return "tier-normal";
+    }
+
+    function renderPlayers() {
+        const tbody = document.querySelector("#playersTable tbody");
+        const list = Object.values(jugadoresCache);
+        tbody.innerHTML = "";
+        list.forEach(p => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}</td>
+                    <td>${p.nick || '-'}</td>
+                    <td>${p.decks[0].name} <span class="tier-badge ${getTierClass(p.decks[0].tier)}">${p.decks[0].tier}</span></td>
+                    <td>${p.decks[1].name} <span class="tier-badge ${getTierClass(p.decks[1].tier)}">${p.decks[1].tier}</span></td>
+                    <td>${p.decks[2].name} <span class="tier-badge ${getTierClass(p.decks[2].tier)}">${p.decks[2].tier}</span></td>
+                    <td style="color:${p.active ? 'var(--success-color)' : 'var(--danger)'}">${p.active ? 'Activo' : 'Drop'}</td>
+                    ${isAdmin ? `<td>${p.active ? `<button class="btn-danger" style="padding:4px 8px; font-size:12px;" data-drop="${p.id}">Drop</button>` : '-'}</td>` : ''}
+                </tr>`;
+        });
+        $("countDisplay").innerText = list.length;
+
+        const locked = estadoCache.currentRoundNumber > 0;
+        $("registroForm").style.opacity = locked ? "0.5" : "1";
+        $("registroForm").style.pointerEvents = locked ? "none" : "auto";
+
+        const note = $("myPlayerNote");
+        if (myPlayerId && jugadoresCache[myPlayerId]) {
+            note.style.display = "block";
+            note.textContent = "📱 Este teléfono está vinculado a: " + jugadoresCache[myPlayerId].name;
+        } else { note.style.display = "none"; }
     }
 
     function renderMatches() {
-        const wrapper = document.getElementById('matchesWrapper');
-        const alertBox = document.getElementById('roundAlert');
-        const finishAlert = document.getElementById('finishedAlert');
-        const btnGen = document.getElementById('btnGenerateRound');
-        const btnFinish = document.getElementById('btnFinishTournament');
+        const wrapper = $("matchesWrapper");
+        const alertBox = $("roundAlert");
+        const finishAlert = $("finishedAlert");
+        const btnGen = $("btnGenerateRound");
+        const btnFinish = $("btnFinishTournament");
 
-        if (state.currentRoundNumber === 0) return;
+        alertBox.style.display = "none";
+        finishAlert.style.display = "none";
 
-        // Actualizar UI Header Rondas
-        document.getElementById('roundTitle').innerText = `Ronda Actual: ${state.currentRoundNumber} de ${state.maxRounds}`;
-        
-        alertBox.style.display = 'none';
-        finishAlert.style.display = 'none';
-
-        // Lógica de visibilidad de botones
-        btnGen.style.display = 'inline-flex';
-        btnFinish.style.display = 'none';
-
-        if (state.currentRoundNumber === state.maxRounds) {
-            btnGen.style.display = 'none'; // Ya no se pueden generar más rondas
-
-            if (state.isFinished) {
-                // El árbitro ya presionó "Finalizar torneo"
-                finishAlert.style.display = 'block';
-                btnFinish.style.display = 'inline-flex';
-                btnFinish.disabled = true;
-                btnFinish.innerText = "Torneo Finalizado";
-            } else if (!checkAllMatchesDone()) {
-                alertBox.innerText = "⚠️ ¡ATENCIÓN: ESTA ES LA ÚLTIMA RONDA DEL TORNEO!";
-                alertBox.style.display = 'block';
-            } else {
-                // Todos los resultados reportados, esperando confirmación del árbitro
-                btnFinish.style.display = 'inline-flex';
-                btnFinish.disabled = false;
-            }
+        if (estadoCache.currentRoundNumber === 0) {
+            $("roundTitle").innerText = "Ronda Actual: Ninguna";
+            wrapper.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Esperando a que el organizador genere la primera ronda…</p>';
+            if (isAdmin) { btnGen.classList.remove("hidden"); btnGen.style.display = "inline-flex"; btnGen.disabled = false; }
+            btnFinish.style.display = "none";
+            return;
         }
 
-        wrapper.innerHTML = '';
-        const currentMatches = state.rounds[state.currentRoundNumber - 1];
+        $("roundTitle").innerText = `Ronda Actual: ${estadoCache.currentRoundNumber} de ${estadoCache.maxRounds}`;
 
-        currentMatches.forEach((m, idx) => {
-            const p1 = state.players.find(p => p.id === m.p1Id);
+        if (isAdmin) {
+            btnGen.classList.remove("hidden");
+            btnGen.style.display = "inline-flex";
+            btnFinish.style.display = "none";
+            const allDone = allMatchesDone();
+            if (estadoCache.currentRoundNumber === estadoCache.maxRounds) {
+                btnGen.style.display = "none";
+                if (estadoCache.isFinished) {
+                    finishAlert.style.display = "block";
+                    btnFinish.style.display = "inline-flex"; btnFinish.disabled = true;
+                    btnFinish.innerText = "Torneo Finalizado";
+                } else if (!allDone) {
+                    alertBox.innerText = "⚠️ ¡ATENCIÓN: ESTA ES LA ÚLTIMA RONDA DEL TORNEO!";
+                    alertBox.style.display = "block";
+                } else {
+                    btnFinish.style.display = "inline-flex"; btnFinish.disabled = false;
+                }
+            }
+        } else if (estadoCache.isFinished) {
+            finishAlert.style.display = "block";
+        }
+
+        const round = lastRound();
+        if (!round) { wrapper.innerHTML = ""; return; }
+
+        wrapper.innerHTML = "";
+        const byId = jugadoresCache;
+        // ordenar matches para vista estable (BYE al final)
+        const ms = [...round.matches].sort((a, b) => (a.p2Id === null ? 1 : 0) - (b.p2Id === null ? 1 : 0));
+        ms.forEach((m, idx) => {
+            const p1 = byId[m.p1Id];
             if (!m.p2Id) {
-                wrapper.innerHTML += `<div class="bye-card">🎁 Mesa ${idx + 1}: <strong>${p1.name}</strong> recibe <strong>BYE (Comodín)</strong> (+3 pts).</div>`;
+                wrapper.innerHTML += `<div class="bye-card">🎁 Mesa ${idx + 1}: <strong>${p1 ? p1.name : '?'}</strong> recibe <strong>BYE (Comodín)</strong> (+3 pts).</div>`;
                 return;
             }
+            const p2 = byId[m.p2Id];
+            if (!p1 || !p2) return;
 
-            const p2 = state.players.find(p => p.id === m.p2Id);
-            let s1 = m.winner === 'p1' ? 'background-color: var(--success-color); color: white;' : '';
-            let s2 = m.winner === 'p2' ? 'background-color: var(--success-color); color: white;' : '';
-            let st = m.winner === 'tie' ? 'background-color: var(--success-color); color: white;' : '';
+            const isMine = currentUser && (m.p1OwnerUid === currentUser.uid || m.p2OwnerUid === currentUser.uid);
+            const canReport = isAdmin || isMine;
+            const s1 = m.winner === "p1" ? "background-color: var(--success-color); color: white;" : "";
+            const s2 = m.winner === "p2" ? "background-color: var(--success-color); color: white;" : "";
+            const st = m.winner === "tie" ? "background-color: var(--success-color); color: white;" : "";
+
+            const actions = canReport
+                ? `<button class="btn-secondary" style="${s1}" data-report="${m.matchId}" data-result="p1">🏆 Ganó ${p1.name}</button>
+                   <button class="btn-secondary" style="${st}" data-report="${m.matchId}" data-result="tie">🤝 Empate</button>
+                   <button class="btn-secondary" style="${s2}" data-report="${m.matchId}" data-result="p2">🏆 Ganó ${p2.name}</button>`
+                : `<button class="btn-secondary" disabled>🏆 ${p1.name}</button>
+                   <button class="btn-secondary" disabled>🤝 Empate</button>
+                   <button class="btn-secondary" disabled>🏆 ${p2.name}</button>
+                   <div class="locked-note">🔒 Solo el organizador o los jugadores de esta mesa pueden reportar.</div>`;
 
             wrapper.innerHTML += `
-                <div class="match-card">
+                <div class="match-card ${isMine ? 'my-table' : ''}">
                     <div class="match-header">
-                        <span class="table-number">Mesa ${idx + 1}</span>
+                        <span class="table-number">Mesa ${idx + 1}${isMine ? ' · TU MESA' : ''}</span>
                         <span class="match-status ${m.completed ? 'status-done' : 'status-pending'}">${m.completed ? '✓ Reportado' : '⏳ Pendiente'}</span>
                     </div>
                     <div class="vs-container">
@@ -644,100 +931,541 @@
                             </ul>
                         </div>
                     </div>
-                    <div class="match-actions">
-                        <button class="btn-secondary" style="${s1}" onclick="reportMatch('${m.matchId}', 'p1')">🏆 Ganó ${p1.name}</button>
-                        <button class="btn-secondary" style="${st}" onclick="reportMatch('${m.matchId}', 'tie')">🤝 Empate</button>
-                        <button class="btn-secondary" style="${s2}" onclick="reportMatch('${m.matchId}', 'p2')">🏆 Ganó ${p2.name}</button>
-                    </div>
-                </div>
-            `;
+                    <div class="match-actions">${actions}</div>
+                </div>`;
         });
     }
 
-    function checkAllMatchesDone() {
-        if(state.rounds.length === 0) return false;
-        return state.rounds[state.rounds.length - 1].every(m => m.completed);
+    function allMatchesDone() {
+        const round = lastRound();
+        if (!round) return false;
+        return round.matches.every(m => m.completed);
     }
 
-    // --- FINALIZAR TORNEO ---
-    function finishTournament() {
-        if (!checkAllMatchesDone()) {
-            alert('❌ Hay partidos sin reportar. Completa todos los resultados antes de finalizar.');
-            return;
-        }
-
-        state.isFinished = true; // Solo se activa aquí, cuando el árbitro confirma
-        saveToLocalStorage();
-
-        alert('🎉 ¡El torneo ha finalizado con éxito! Redirigiendo a las clasificaciones finales.');
-
-        renderMatches(); // Actualizar UI de rondas (bloquear botón, mostrar alerta)
-        document.querySelector('.tab:nth-child(3)').click(); // Navegar a posiciones
-    }
-
-    // --- POSICIONES ---
     function renderStandings() {
-        calculateBuchholz();
-        const tbody = document.querySelector('#standingsTable tbody');
-        tbody.innerHTML = '';
-
-        let sorted = [...state.players].sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points; // 1. Puntos
-            if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz; // 2. Buchholz
-            return b.wins - a.wins; // 3. Victorias
-        });
-
+        const { players } = buildDerived();
+        const tbody = document.querySelector("#standingsTable tbody");
+        tbody.innerHTML = "";
+        const sorted = sortStandings(players);
         if (sorted.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay competidores.</td></tr>`;
             return;
         }
-
         sorted.forEach((p, idx) => {
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${idx + 1}</strong></td>
-                    <td><strong>${p.name}</strong></td>
+                    <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}</td>
                     <td style="color: var(--accent-yellow); font-weight: bold; font-size:15px;">${p.points}</td>
                     <td class="buchholz-col">${p.buchholz}</td>
                     <td style="color:#a9e34b">${p.wins}</td>
                     <td>${p.ties}</td>
                     <td style="color:#ff8787">${p.losses}</td>
                     <td style="font-weight: 500; color: ${p.active ? 'var(--success-color)' : 'var(--danger)'}">${p.active ? 'Activo' : 'Drop'}</td>
-                </tr>
-            `;
+                </tr>`;
         });
     }
 
-    // --- MANEJO DE DATOS ---
-    function saveToLocalStorage() { localStorage.setItem('pkmn_tcg_swiss', JSON.stringify(state)); }
-    function loadFromLocalStorage() {
-        const saved = localStorage.getItem('pkmn_tcg_swiss');
-        if (saved) {
-            state = JSON.parse(saved);
-            renderPlayers(); renderMatches();
-        }
+    /* ============================================================
+       HISTORIAL / ESTADÍSTICAS (desde la colección perfiles)
+    ============================================================ */
+    function perfilEntries(p) {
+        // historial es un mapa { torneoId: entry }
+        return p.historial ? Object.values(p.historial) : [];
     }
-    
-    function exportTournament() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-        const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", `torneo_pokemon.json`);
+
+    function renderHistorial() {
+        const conHistorial = perfilesCache
+            .map(p => ({ p, entries: perfilEntries(p) }))
+            .filter(x => x.entries.length > 0);
+
+        // KPIs globales
+        const torneos = new Set();
+        let vTot = 0, eTot = 0, dTot = 0;
+        conHistorial.forEach(({ entries }) => entries.forEach(e => {
+            if (e.torneoId) torneos.add(e.torneoId);
+            vTot += e.victorias || 0; eTot += e.empates || 0; dTot += e.derrotas || 0;
+        }));
+        const kpi = (label, val) => `<div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:14px; text-align:center;">
+            <div style="font-size:26px; font-weight:bold; color:var(--accent-yellow);">${val}</div>
+            <div style="font-size:12px; color:var(--text-muted);">${label}</div></div>`;
+        $("statsKpis").innerHTML =
+            kpi("Torneos registrados", torneos.size) +
+            kpi("Jugadores con historial", conHistorial.length) +
+            kpi("Partidas jugadas", vTot + eTot + dTot) +
+            kpi("Victorias totales", vTot);
+
+        // Ranking histórico
+        const rows = conHistorial.map(({ p, entries }) => {
+            const mejorPos = Math.min(...entries.map(e => e.posicion || 999));
+            const ptsTot = entries.reduce((s, e) => s + (e.puntos || 0), 0);
+            const v = entries.reduce((s, e) => s + (e.victorias || 0), 0);
+            const em = entries.reduce((s, e) => s + (e.empates || 0), 0);
+            const d = entries.reduce((s, e) => s + (e.derrotas || 0), 0);
+            return { id: p.id, nombre: p.name || "(sin nombre)", nick: p.nick || "-", torneos: entries.length, mejorPos, ptsTot, v, em, d, fav: p.favPokemon || "-" };
+        }).sort((a, b) => b.torneos - a.torneos || a.mejorPos - b.mejorPos || b.ptsTot - a.ptsTot);
+
+        const tb = document.querySelector("#historyTable tbody");
+        if (rows.length === 0) {
+            tb.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Aún no hay torneos finalizados. El historial se guarda al pulsar "Finalizar torneo".</td></tr>`;
+        } else {
+            tb.innerHTML = rows.map(r => `
+                <tr>
+                    <td><strong>${r.nombre}</strong><br><span style="font-size:12px;color:var(--text-muted)">${r.nick}</span></td>
+                    <td>${r.torneos}</td>
+                    <td><span class="tier-badge ${r.mejorPos === 1 ? 'tier-s' : 'tier-normal'}">${r.mejorPos === 999 ? '-' : '#' + r.mejorPos}</span></td>
+                    <td style="color:var(--accent-yellow); font-weight:bold;">${r.ptsTot}</td>
+                    <td style="color:#a9e34b">${r.v}</td>
+                    <td>${r.em}</td>
+                    <td style="color:#ff8787">${r.d}</td>
+                    <td>${r.fav}</td>
+                </tr>`).join("");
+        }
+
+        // Decks más usados (cuenta apariciones en historial.decks)
+        const deckCount = {};
+        conHistorial.forEach(({ entries }) => entries.forEach(e => {
+            (e.decks || []).forEach(name => { if (name) deckCount[name] = (deckCount[name] || 0) + 1; });
+        }));
+        const deckRows = Object.entries(deckCount).sort((a, b) => b[1] - a[1]);
+        const dtb = document.querySelector("#deckRankTable tbody");
+        dtb.innerHTML = deckRows.length
+            ? deckRows.map(([name, n], i) => `<tr><td>${i + 1}</td><td><strong>${name}</strong></td><td>${n}</td></tr>`).join("")
+            : `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Sin datos aún.</td></tr>`;
+
+        // Selector de detalle por jugador (preserva selección)
+        const sel = $("historyPlayerSelect");
+        const prev = sel.value;
+        sel.innerHTML = `<option value="">— Elige un jugador —</option>` +
+            rows.map(r => `<option value="${r.id}">${r.nombre} (${r.nick})</option>`).join("");
+        if (prev && rows.some(r => r.id === prev)) sel.value = prev;
+
+        renderCharts(rows, deckRows, vTot, eTot, dTot);
+        renderHistoryDetail();
+    }
+
+    /* ---- Gráficas (Chart.js) ---- */
+    let chartPoints = null, chartDecks = null, chartWLD = null;
+    function renderCharts(rows, deckRows, v, e, d) {
+        if (typeof Chart === "undefined") return; // CDN no disponible
+        const YELLOW = "#ffcb05", BLUE = "#3b4cca", GREEN = "#37b24d", RED = "#fa5252", MUTED = "#9aa5b5";
+        Chart.defaults.color = MUTED;
+        Chart.defaults.font.family = "Segoe UI, system-ui, sans-serif";
+        const noLegend = { plugins: { legend: { display: false } }, maintainAspectRatio: false };
+
+        if (chartPoints) chartPoints.destroy();
+        if (chartDecks) chartDecks.destroy();
+        if (chartWLD) chartWLD.destroy();
+
+        const topP = rows.slice(0, 10);
+        chartPoints = new Chart($("chartPoints"), {
+            type: "bar",
+            data: { labels: topP.map(r => r.nick), datasets: [{ data: topP.map(r => r.ptsTot), backgroundColor: YELLOW }] },
+            options: noLegend
+        });
+
+        const topD = deckRows.slice(0, 10);
+        chartDecks = new Chart($("chartDecks"), {
+            type: "bar",
+            data: { labels: topD.map(x => x[0]), datasets: [{ data: topD.map(x => x[1]), backgroundColor: BLUE }] },
+            options: { ...noLegend, indexAxis: "y" }
+        });
+
+        chartWLD = new Chart($("chartWLD"), {
+            type: "doughnut",
+            data: {
+                labels: ["Victorias", "Empates", "Derrotas"],
+                datasets: [{ data: [v, e, d], backgroundColor: [GREEN, MUTED, RED] }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }
+        });
+    }
+
+    /* ---- Exportar estadísticas a CSV (formato largo: 1 fila por torneo/jugador) ---- */
+    function csvCell(v) {
+        const s = (v === null || v === undefined) ? "" : String(v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+    function exportHistorialCSV() {
+        const headers = ["nombre","nick","pokemonFavorito","torneoId","fecha","posicion","puntos","buchholz","victorias","empates","derrotas","decks"];
+        const lines = [headers.join(",")];
+        perfilesCache.forEach(p => {
+            perfilEntries(p).forEach(e => {
+                lines.push([
+                    p.name, p.nick, p.favPokemon, e.torneoId, e.fecha, e.posicion,
+                    e.puntos, e.buchholz, e.victorias, e.empates, e.derrotas,
+                    (e.decks || []).join(" | ")
+                ].map(csvCell).join(","));
+            });
+        });
+        if (lines.length === 1) { toast("No hay historial que exportar todavía"); return; }
+        // BOM para que Excel respete acentos
+        const blob = "﻿" + lines.join("\n");
+        const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(blob);
+        const dl = document.createElement("a");
+        dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", "estadisticas_pokemon_" + new Date().toISOString().slice(0, 10) + ".csv");
         document.body.appendChild(dl); dl.click(); dl.remove();
     }
 
-    function importTournament(event) {
-        const file = event.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                state = JSON.parse(e.target.result); saveToLocalStorage();
-                renderPlayers(); renderMatches(); renderStandings();
-                alert('✅ Estado cargado.');
-            } catch (err) { alert('❌ Error en el archivo JSON.'); }
-        };
-        reader.readAsText(file);
+    function renderHistoryDetail() {
+        const sel = $("historyPlayerSelect");
+        const cont = $("historyDetail");
+        if (!sel || !sel.value) { cont.innerHTML = ""; return; }
+        const p = perfilesCache.find(x => x.id === sel.value);
+        if (!p) { cont.innerHTML = ""; return; }
+        const entries = perfilEntries(p).sort((a, b) => (a.fecha || "").localeCompare(b.fecha || ""));
+        if (entries.length === 0) { cont.innerHTML = ""; return; }
+        cont.innerHTML = `
+            <table style="margin-top:10px;">
+                <thead><tr><th>Fecha</th><th>Torneo</th><th>Pos</th><th>Pts</th><th>Buchholz</th><th>V-E-D</th><th>Decks</th></tr></thead>
+                <tbody>
+                ${entries.map(e => `<tr>
+                    <td>${e.fecha || '-'}</td>
+                    <td style="font-size:12px; color:var(--text-muted)">${e.torneoId || '-'}</td>
+                    <td><span class="tier-badge ${e.posicion === 1 ? 'tier-s' : 'tier-normal'}">#${e.posicion || '-'}</span></td>
+                    <td style="color:var(--accent-yellow); font-weight:bold;">${e.puntos ?? '-'}</td>
+                    <td class="buchholz-col">${e.buchholz ?? '-'}</td>
+                    <td>${e.victorias || 0}-${e.empates || 0}-${e.derrotas || 0}</td>
+                    <td>${(e.decks || []).join(', ') || '-'}</td>
+                </tr>`).join("")}
+                </tbody>
+            </table>`;
     }
 
-    window.onload = loadFromLocalStorage;
+    // "Mi jugador" se determina por ownerUid (funciona entre dispositivos si
+    // el jugador vinculó su identidad). localStorage es solo respaldo local.
+    function computeMyPlayer() {
+        if (currentUser) {
+            const mine = Object.values(jugadoresCache).find(p => p.ownerUid === currentUser.uid);
+            if (mine) { myPlayerId = mine.id; return; }
+        }
+        const ls = localStorage.getItem(LS_PLAYER);
+        myPlayerId = (ls && jugadoresCache[ls]) ? ls : null;
+    }
+
+    function renderAll() {
+        computeMyPlayer();
+        buildDerived();
+        renderPlayers();
+        renderMatches();
+        renderStandings();
+        renderHistorial();
+        updateIdentityUI();
+    }
+
+    /* ============================================================
+       ROL / UI DE AUTENTICACIÓN
+    ============================================================ */
+    function applyRoleUI() {
+        // badge de rol
+        if (isAdmin) {
+            $("roleBadge").className = "role-badge role-admin";
+            $("roleBadge").textContent = "🛡️ Organizador";
+        } else {
+            $("roleBadge").className = "role-badge role-player";
+            $("roleBadge").textContent = "👤 Jugador";
+        }
+
+        // mostrar/ocultar controles admin según permiso REAL
+        document.querySelectorAll(".admin-only").forEach(el => el.classList.toggle("hidden", !isAdmin));
+
+        // barra de login: visible solo con ?admin=true
+        const bar = $("adminBar");
+        bar.classList.toggle("hidden", !showAdminUI);
+        if (showAdminUI) {
+            const logged = currentUser && !currentUser.isAnonymous;
+            $("adminLoginForm").style.display = logged ? "none" : "flex";
+            $("adminInfo").classList.toggle("hidden", !logged);
+            if (logged) {
+                $("adminWho").textContent = (isAdmin ? "🛡️ Admin: " : "⚠️ Sesión sin permisos: ") + (currentUser.email || "");
+                $("adminUid").textContent = currentUser.uid;
+            }
+        }
+    }
+
+    function recomputeAdmin() {
+        isAdmin = !!(currentUser && !currentUser.isAnonymous &&
+                     (adminCache.adminUids || []).includes(currentUser.uid));
+        applyRoleUI();
+        renderAll();
+    }
+
+    async function adminLogin() {
+        const email = $("adminEmail").value.trim();
+        const pass  = $("adminPass").value;
+        if (!email || !pass) { toast("Ingresa correo y contraseña"); return; }
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            $("adminPass").value = "";
+            toast("🔑 Sesión iniciada");
+        } catch (e) {
+            console.error(e);
+            alert("❌ No se pudo iniciar sesión: " + e.message);
+        }
+    }
+
+    async function adminLogout() {
+        try {
+            await signOut(auth); // onAuthStateChanged volverá a firmar anónimo
+            toast("Sesión cerrada");
+        } catch (e) { console.error(e); }
+    }
+
+    /* ============================================================
+       IDENTIDAD DEL JUGADOR (vincular anónimo -> permanente)
+    ============================================================ */
+    // Vincula correo/contraseña al MISMO uid anónimo: conserva la propiedad
+    // del jugador ya registrado y permite recuperarlo en otros dispositivos.
+    async function linkIdentity() {
+        if (!currentUser) { toast("Conectando…"); return; }
+        const email = $("idEmail").value.trim();
+        const pass  = $("idPass").value;
+        if (!email || pass.length < 6) { toast("Correo válido y contraseña de 6+ caracteres"); return; }
+
+        if (!currentUser.isAnonymous) { toast("Ya tienes una identidad vinculada"); return; }
+
+        try {
+            const cred = EmailAuthProvider.credential(email, pass);
+            await linkWithCredential(currentUser, cred);
+            $("idPass").value = "";
+            toast("✅ Identidad vinculada. Úsala para entrar en otros teléfonos.");
+        } catch (e) {
+            console.error(e);
+            if (e.code === "auth/email-already-in-use" || e.code === "auth/credential-already-in-use") {
+                alert("Ese correo ya tiene cuenta. Usa \"Ya tengo cuenta · Iniciar sesión\" para recuperar tu jugador.\n\n" + e.message);
+            } else {
+                alert("❌ No se pudo vincular: " + e.message);
+            }
+        }
+    }
+
+    async function playerSignIn() {
+        const email = $("idEmail").value.trim();
+        const pass  = $("idPass").value;
+        if (!email || !pass) { toast("Ingresa correo y contraseña"); return; }
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            $("idPass").value = "";
+            toast("🔑 Sesión iniciada. Recuperando tu jugador…");
+        } catch (e) {
+            console.error(e);
+            alert("❌ No se pudo iniciar sesión: " + e.message);
+        }
+    }
+
+    // Recuperación de contraseña (jugador u organizador)
+    async function sendReset(inputId) {
+        const email = $(inputId).value.trim();
+        if (!email) { toast("Escribe tu correo primero y vuelve a pulsar"); return; }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert("📧 Te enviamos un enlace para restablecer la contraseña a:\n" + email + "\n\nRevisa tu bandeja (y spam).");
+        } catch (e) {
+            console.error(e);
+            if (e.code === "auth/user-not-found") {
+                alert("No hay ninguna cuenta con ese correo. ¿Escribiste bien el correo con el que te vinculaste?");
+            } else {
+                alert("❌ No se pudo enviar el correo: " + e.message);
+            }
+        }
+    }
+
+    async function playerLogout() {
+        try {
+            localStorage.removeItem(LS_PLAYER);
+            await signOut(auth); // volverá a sesión anónima
+            toast("Sesión cerrada");
+        } catch (e) { console.error(e); }
+    }
+
+    function updateIdentityUI() {
+        const anon = !currentUser || currentUser.isAnonymous;
+        $("identityAnon").style.display = anon ? "flex" : "none";
+        $("identityLogged").classList.toggle("hidden", anon);
+        if (!anon) {
+            const mine = myPlayerId && jugadoresCache[myPlayerId] ? jugadoresCache[myPlayerId].name : null;
+            $("identityWho").textContent = "🔒 Identidad: " + (currentUser.email || "") + (mine ? " · Jugador: " + mine : "");
+        }
+
+        // Botón "usar mis datos": visible si tengo perfil, aún no estoy inscrito
+        // en este torneo y el registro está abierto.
+        const alreadyIn = Object.values(jugadoresCache).some(p => currentUser && p.ownerUid === currentUser.uid);
+        const canPrefill = !!myPerfilCache && !alreadyIn && estadoCache.currentRoundNumber === 0;
+        $("btnPrefill").classList.toggle("hidden", !canPrefill);
+    }
+
+    /* ============================================================
+       AUTOCOMPLETAR REGISTRO DESDE EL PERFIL GUARDADO
+    ============================================================ */
+    function subscribeMyPerfil() {
+        if (myPerfilUnsub) { myPerfilUnsub(); myPerfilUnsub = null; }
+        myPerfilCache = null;
+        prefilledOnce = false;
+        if (!currentUser) return;
+        myPerfilUnsub = onSnapshot(doc(PERFILES_COL, currentUser.uid), (snap) => {
+            myPerfilCache = snap.exists() ? snap.data() : null;
+            maybeAutoPrefill();
+            updateIdentityUI();
+        }, (err) => console.warn("perfil listener:", err.message));
+    }
+
+    function prefillFromPerfil(force) {
+        const p = myPerfilCache;
+        if (!p) return;
+        if (estadoCache.currentRoundNumber > 0) return;          // registro cerrado
+        // no sobrescribir lo que el usuario ya escribió, salvo que fuerce
+        const setIf = (id, val) => { if (val && (force || !$(id).value)) $(id).value = val; };
+        setIf("playerName", p.name);
+        setIf("playerNick", p.nick);
+        setIf("playerBday", p.birthday);
+        setIf("favPokemon", p.favPokemon);
+        const tops = p.topPokemons || [];
+        ["top1","top2","top3","top4","top5"].forEach((id, i) => setIf(id, tops[i]));
+        const decks = p.decksUsados || [];
+        [["deck1Name","deck1Tier"],["deck2Name","deck2Tier"],["deck3Name","deck3Tier"]].forEach((pair, i) => {
+            const item = decks[i];
+            if (!item) return;
+            const name = typeof item === "string" ? item : (item.name || "");
+            const tier = typeof item === "object" ? (item.tier || "") : "";
+            if (name && (force || !$(pair[0]).value)) {
+                $(pair[0]).value = name;
+                if (tier) $(pair[1]).value = tier;   // restaura el tier guardado
+            }
+        });
+        if (force) toast("🔄 Datos cargados desde tu perfil");
+    }
+
+    function maybeAutoPrefill() {
+        if (prefilledOnce) return;
+        const alreadyIn = Object.values(jugadoresCache).some(p => currentUser && p.ownerUid === currentUser.uid);
+        if (myPerfilCache && !alreadyIn && estadoCache.currentRoundNumber === 0 && !$("playerName").value) {
+            prefillFromPerfil(false);
+            prefilledOnce = true;
+        }
+    }
+
+    /* ============================================================
+       LISTENERS EN TIEMPO REAL
+    ============================================================ */
+    async function ensureEstado() {
+        const snap = await getDoc(ESTADO_REF);
+        if (!snap.exists()) {
+            await setDoc(ESTADO_REF, {
+                currentRoundNumber: 0, maxRounds: 0, isFinished: false,
+                torneoId: "T" + Date.now(), createdAt: serverTimestamp()
+            });
+        }
+    }
+
+    let listenersReady = false;
+    function attachListeners() {
+        if (listenersReady) return;
+        listenersReady = true;
+
+        onSnapshot(CONFIG_REF, (snap) => {
+            adminCache = snap.exists() ? { adminUids: [], ...snap.data() } : { adminUids: [] };
+            recomputeAdmin();
+        }, (err) => console.warn("config listener:", err.message));
+
+        onSnapshot(ESTADO_REF, (snap) => {
+            if (snap.exists()) estadoCache = { ...estadoCache, ...snap.data() };
+            $("connBadge").className = "conn-badge conn-ok";
+            $("connBadge").textContent = "● En línea";
+            renderAll();
+        }, (err) => {
+            console.error("estado listener:", err);
+            $("connBadge").className = "conn-badge conn-off";
+            $("connBadge").textContent = "● Error de conexión";
+        });
+
+        onSnapshot(JUGADORES_COL, (snap) => {
+            const map = {};
+            snap.forEach(d => { map[d.id] = d.data(); });
+            jugadoresCache = map;
+            renderAll();
+        }, (err) => console.error("jugadores listener:", err));
+
+        onSnapshot(collectionGroup(db, "matches"), (snap) => {
+            const arr = [];
+            snap.forEach(d => { arr.push({ id: d.id, ...d.data() }); });
+            matchesCache = arr;
+            renderAll();
+        }, (err) => console.error("matches listener:", err));
+
+        onSnapshot(PERFILES_COL, (snap) => {
+            const arr = [];
+            snap.forEach(d => { arr.push({ id: d.id, ...d.data() }); });
+            perfilesCache = arr;
+            renderHistorial();
+        }, (err) => console.error("perfiles listener:", err));
+    }
+
+    /* ============================================================
+       WIRING DE UI
+    ============================================================ */
+    function setupUI() {
+        document.querySelectorAll(".tab").forEach(btn => {
+            btn.addEventListener("click", () => changeTab(btn.dataset.tab, btn));
+        });
+
+        $("btnRegister").addEventListener("click", registerPlayer);
+        $("btnReset").addEventListener("click", resetTournament);
+        $("btnExport").addEventListener("click", exportTournament);
+        $("btnGenerateRound").addEventListener("click", createNewRound);
+        $("btnFinishTournament").addEventListener("click", finishTournament);
+        $("btnAdminLogin").addEventListener("click", adminLogin);
+        $("btnAdminLogout").addEventListener("click", adminLogout);
+        $("btnLinkIdentity").addEventListener("click", linkIdentity);
+        $("btnPlayerSignIn").addEventListener("click", playerSignIn);
+        $("btnPlayerLogout").addEventListener("click", playerLogout);
+        $("btnPlayerReset").addEventListener("click", () => sendReset("idEmail"));
+        $("btnAdminReset").addEventListener("click", () => sendReset("adminEmail"));
+        $("btnPrefill").addEventListener("click", () => prefillFromPerfil(true));
+        $("historyPlayerSelect").addEventListener("change", renderHistoryDetail);
+        $("btnExportCsv").addEventListener("click", exportHistorialCSV);
+
+        document.body.addEventListener("click", (e) => {
+            const drop = e.target.closest("[data-drop]");
+            if (drop) { dropPlayer(drop.dataset.drop); return; }
+            const rep = e.target.closest("[data-report]");
+            if (rep) { reportMatch(rep.dataset.report, rep.dataset.result); return; }
+        });
+    }
+
+    /* ============================================================
+       ARRANQUE
+    ============================================================ */
+    (function init() {
+        setupUI();
+        applyRoleUI();
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                // sin sesión → firmar anónimo (todos necesitan auth para leer/escribir)
+                try { await signInAnonymously(auth); } catch (e) {
+                    console.error(e);
+                    $("connBadge").className = "conn-badge conn-off";
+                    $("connBadge").textContent = "● Habilita Auth Anónimo";
+                    alert("❌ Habilita el proveedor 'Anónimo' en Firebase Authentication.\n\n" + e.message);
+                }
+                return; // el callback se vuelve a disparar con el usuario
+            }
+
+            currentUser = user;
+            recomputeAdmin();
+            subscribeMyPerfil();
+
+            try {
+                await ensureEstado();
+                attachListeners();
+            } catch (e) {
+                console.error(e);
+                $("connBadge").className = "conn-badge conn-off";
+                $("connBadge").textContent = "● Error: revisa reglas de Firestore";
+            }
+        });
+    })();
 </script>
 </body>
 </html>
