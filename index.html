@@ -342,6 +342,9 @@
             <div style="display: flex; gap: 10px; flex-wrap:wrap;">
                 <button id="btnStartTournament" class="btn-accent admin-only hidden">🚀 Comenzar Torneo</button>
                 <button id="btnGenerateRound" class="btn-accent admin-only hidden">⚔️ Generar Siguiente Ronda</button>
+                <button id="btnStartRound" class="btn-success admin-only hidden">▶️ Iniciar Ronda</button>
+                <button id="btnRegenRound" class="btn-secondary admin-only hidden">🔄 Regenerar Ronda</button>
+                <button id="btnEditRound" class="btn-secondary admin-only hidden">✏️ Editar Ronda</button>
                 <button id="btnFinishTournament" class="btn-success admin-only hidden" style="display: none;">🏆 Finalizar torneo</button>
             </div>
         </div>
@@ -538,6 +541,7 @@
 
     // Fase 1: visualización de rondas pasadas + cronómetro
     let viewedRound   = null;              // ronda que se está viendo (null = ronda actual)
+    let showEditForms = false;             // modo edición de resultados (botón "Editar Ronda")
     const ROUND_SECONDS = 50 * 60;          // 50 minutos por ronda
     let alarmFiredFor = null;               // timerEndsAt para el que ya sonó la alarma
     const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -633,7 +637,7 @@
        DERIVACIÓN: puntos/PG/PE/PP/Buchholz/BYE se CALCULAN desde
        jugadores + partidas. Nadie escribe contadores.
     ============================================================ */
-    function buildDerived() {
+    function buildDerived(upToRoundExclusive) {
         const players = Object.values(jugadoresCache).map(p => ({
             ...p, points: 0, wins: 0, ties: 0, losses: 0,
             buchholz: 0, hadBye: false, history: []
@@ -641,6 +645,7 @@
         const byId = Object.fromEntries(players.map(p => [p.id, p]));
 
         roundsFromMatches().forEach(r => {
+            if (upToRoundExclusive != null && r.roundNumber >= upToRoundExclusive) return;
             r.matches.forEach(m => {
                 const p1 = byId[m.p1Id];
                 if (!m.p2Id) { // BYE
@@ -677,8 +682,9 @@
             p.buchholz = Math.round(p.buchholz * 100) / 100;
         });
 
-        derived = { players, byId };
-        return derived;
+        const result = { players, byId };
+        if (upToRoundExclusive == null) derived = result;   // no pisar el estado global en cálculos auxiliares
+        return result;
     }
 
     function sortStandings(arr) {
@@ -730,6 +736,15 @@
 
         if (!pName || decks.some(d => !d.name)) { alert("❌ Ingresa el nombre del jugador y los 3 decks."); return; }
         if (decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S por jugador."); return; }
+
+        // Evita jugadores duplicados en el MISMO torneo: mismo correo, o la misma
+        // cuenta (para jugadores; el organizador sí puede inscribir a varios).
+        if (email && Object.values(jugadoresCache).some(p => (p.email || "").toLowerCase() === email)) {
+            alert("❌ Ya hay un jugador inscrito con ese correo en este torneo."); return;
+        }
+        if (!isAdmin && Object.values(jugadoresCache).some(p => p.ownerUid === currentUser.uid)) {
+            alert("❌ Ya inscribiste un jugador en este torneo con esta cuenta."); return;
+        }
 
         const id = uid();
         // Clave de perfil (para no duplicar historial entre torneos):
@@ -898,8 +913,9 @@
             batch.set(ESTADO_REF, {
                 currentRoundNumber: roundNumber, maxRounds,
                 isFinished: false, torneoId,
-                // Auto-inicia el cronómetro de 50 min al generar la ronda
-                timerRunning: true, timerEndsAt: Date.now() + ROUND_SECONDS * 1000, timerRemaining: null
+                // El cronómetro queda en pausa (50:00). El organizador lo arranca
+                // con "Iniciar Ronda" tras revisar los emparejamientos.
+                timerRunning: false, timerRemaining: ROUND_SECONDS, timerEndsAt: null
             }, { merge: true });
             await batch.commit();
             alarmFiredFor = null;               // permite que la alarma vuelva a sonar
@@ -909,6 +925,65 @@
             console.error(e);
             alert("❌ Error al generar ronda: " + e.message);
         }
+    }
+
+    // Regenerar la ronda ACTUAL: borra sus mesas y vuelve a emparejar según las
+    // posiciones de las rondas anteriores (útil tras corregir un resultado).
+    async function regenerateRound() {
+        if (!isAdmin) return;
+        const roundNumber = estadoCache.currentRoundNumber;
+        if (roundNumber === 0) { toast("No hay ronda que regenerar"); return; }
+        if (estadoCache.isFinished) { toast("El torneo ya finalizó"); return; }
+        if (!confirm("Regenerar la Ronda " + roundNumber + ":\n\nSe BORRAN las mesas y resultados de esta ronda y se vuelve a emparejar según las posiciones actuales (útil tras corregir un resultado anterior).\n\n¿Continuar?")) return;
+
+        const { players } = buildDerived(roundNumber);          // posiciones solo con rondas anteriores
+        let active = sortStandings(players.filter(p => p.active));
+        if (active.length < 2) { alert("❌ Necesitas al menos 2 jugadores activos."); return; }
+
+        let pool = [...active];
+        const roundMatches = [];
+        if (pool.length % 2 !== 0) {
+            let byeIndex = pool.length - 1;
+            while (byeIndex >= 0 && pool[byeIndex].hadBye) byeIndex--;
+            if (byeIndex < 0) byeIndex = pool.length - 1;
+            const bp = pool.splice(byeIndex, 1)[0];
+            roundMatches.push({
+                matchId: uid(), roundNumber, p1Id: bp.id, p2Id: null,
+                p1OwnerUid: bp.ownerUid || null, p2OwnerUid: null,
+                p1DeckOrder: [], p2DeckOrder: [], completed: true, winner: "p1"
+            });
+        }
+        (findPairings(pool) || []).forEach(({ p1, p2 }) => {
+            roundMatches.push({
+                matchId: uid(), roundNumber, p1Id: p1.id, p2Id: p2.id,
+                p1OwnerUid: p1.ownerUid || null, p2OwnerUid: p2.ownerUid || null,
+                p1DeckOrder: shuffle(p1.decks), p2DeckOrder: shuffle(p2.decks),
+                completed: false, winner: null
+            });
+        });
+
+        try {
+            const batch = writeBatch(db);
+            (await getDocs(collection(db, "rondas", "r" + roundNumber, "matches"))).forEach(d => batch.delete(d.ref));
+            roundMatches.forEach(m => batch.set(doc(db, "rondas", "r" + roundNumber, "matches", m.matchId), m));
+            batch.set(ESTADO_REF, { timerRunning: false, timerRemaining: ROUND_SECONDS, timerEndsAt: null }, { merge: true });
+            await batch.commit();
+            alarmFiredFor = null; showEditForms = false; viewedRound = null;
+            toast("🔄 Ronda " + roundNumber + " regenerada");
+        } catch (e) {
+            console.error(e);
+            alert("❌ Error al regenerar: " + e.message);
+        }
+    }
+
+    function toggleEditRound() {
+        if (!isAdmin) return;
+        showEditForms = !showEditForms;
+        renderMatches();
+    }
+    function toggleRoundTimer() {
+        if (!isAdmin) return;
+        if (estadoCache.timerRunning) timerPause(); else timerStart();
     }
 
     // Reportar resultado: escritura ATÓMICA a un solo documento => sin carrera
@@ -955,16 +1030,22 @@
         const readOrder = (pfx) => ["a", "b", "c"]
             .map(k => { const el = $(pfx + k + "_" + matchId); return el ? el.value : null; })
             .filter(Boolean);
-        const p1Played = readOrder("d1");
-        const p2Played = readOrder("d2");
 
         if (match.completed && match.winner !== winner &&
             !confirm("Esta mesa ya tenía un resultado.\n¿Cambiarlo por el nuevo? Recalculará las posiciones.")) return;
 
+        // Cada jugador solo escribe el orden de SU lado (coincide con las reglas
+        // de Firestore); el organizador escribe ambos.
+        const canEditP1 = isAdmin || (currentUser && currentUser.uid === match.p1OwnerUid);
+        const canEditP2 = isAdmin || (currentUser && currentUser.uid === match.p2OwnerUid);
+        const payload = { completed: true, winner, p1Games: g1, p2Games: g2 };
+        if (canEditP1) payload.p1Played = readOrder("d1");
+        if (canEditP2) payload.p2Played = readOrder("d2");
+
         try {
             await updateDoc(
                 doc(db, "rondas", "r" + match.roundNumber, "matches", match.matchId),
-                { completed: true, winner, p1Games: g1, p2Games: g2, p1Played, p2Played }
+                payload
             );
             toast("✅ Resultado guardado: " + g1 + "–" + g2);
         } catch (e) {
@@ -1376,11 +1457,11 @@
         .replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     // Desplegable con los 3 mazos de un jugador (para reportar el orden jugado).
-    function deckSelect(id, decks, selectedName) {
+    function deckSelect(id, decks, selectedName, disabled) {
         const opts = (decks || []).map(d =>
             `<option value="${esc(d.name)}" ${d.name === selectedName ? "selected" : ""}>${esc(d.name)}</option>`
         ).join("");
-        return `<select id="${id}" class="mini-select">${opts}</select>`;
+        return `<select id="${id}" class="mini-select"${disabled ? " disabled title='Solo el dueño de esta mesa o el organizador pueden cambiar este lado'" : ""}>${opts}</select>`;
     }
 
     // Ronda que se debe visualizar: la seleccionada (viewedRound) si es válida,
@@ -1432,6 +1513,9 @@
         const btnStart = $("btnStartTournament");
         const btnGen = $("btnGenerateRound");
         const btnFinish = $("btnFinishTournament");
+        const btnStartRound = $("btnStartRound");
+        const btnRegenRound = $("btnRegenRound");
+        const btnEditRound = $("btnEditRound");
         const pastNote = $("pastRoundNote");
 
         alertBox.style.display = "none";
@@ -1443,9 +1527,15 @@
 
         // Estado de botones (siempre según la ronda ACTUAL, no la visualizada)
         if (isAdmin) {
-            btnStart.style.display = estadoCache.currentRoundNumber === 0 ? "inline-flex" : "none";
-            btnGen.style.display   = estadoCache.currentRoundNumber === 0 ? "none" : "inline-flex";
+            const roundActive = estadoCache.currentRoundNumber > 0;
+            btnStart.style.display = roundActive ? "none" : "inline-flex";
+            btnGen.style.display   = roundActive ? "inline-flex" : "none";
             btnFinish.style.display = "none";
+            btnStartRound.style.display = roundActive ? "inline-flex" : "none";
+            btnRegenRound.style.display = roundActive ? "inline-flex" : "none";
+            btnEditRound.style.display  = roundActive ? "inline-flex" : "none";
+            btnStartRound.textContent = estadoCache.timerRunning ? "⏸️ Pausar Ronda" : "▶️ Iniciar Ronda";
+            btnEditRound.textContent = showEditForms ? "✅ Terminar edición" : "✏️ Editar Ronda";
         }
 
         if (estadoCache.currentRoundNumber === 0) {
@@ -1505,6 +1595,9 @@
             // En rondas pasadas SOLO el organizador puede editar (los jugadores
             // reportan únicamente su mesa de la ronda actual).
             const canReport = isAdmin || (isMine && isCurrentRound);
+            // Cada jugador solo puede editar el orden de SU lado (el organizador ambos).
+            const canEditP1 = isAdmin || (currentUser && currentUser.uid === m.p1OwnerUid);
+            const canEditP2 = isAdmin || (currentUser && currentUser.uid === m.p2OwnerUid);
             const mid = m.matchId;
             const g1v = (m.p1Games != null ? m.p1Games : "");
             const g2v = (m.p2Games != null ? m.p2Games : "");
@@ -1513,9 +1606,18 @@
                 : "";
             const ord = (played, suggested, i) =>
                 (played && played[i]) || (suggested && suggested[i] && suggested[i].name) || "";
+            const playedList = (pl, sug) => (pl && pl.length ? pl : (sug || []).map(d => d.name));
 
-            const actions = canReport
-                ? `<div class="report-form" style="width:100%;">
+            // Formulario editable si: puede reportar Y (no está completo, o es su
+            // propia mesa, o el organizador activó "Editar Ronda").
+            const editable = canReport && (!m.completed || isMine || showEditForms);
+
+            let actions;
+            if (editable) {
+                const lockNote = (!canEditP1 || !canEditP2)
+                    ? `<div class="locked-note">🔒 Solo puedes cambiar el orden de TUS decks; el lado del rival está bloqueado.</div>`
+                    : "";
+                actions = `<div class="report-form" style="width:100%;">
                      <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
                         <strong style="color:var(--accent-blue)">${p1.name}</strong>
                         <input type="number" min="0" max="9" id="g1_${mid}" value="${g1v}" style="width:56px; text-align:center;">
@@ -1525,25 +1627,33 @@
                      </div>
                      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
                         <div>
-                           <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p1.name}:</div>
-                           ${["a","b","c"].map((k,i)=>deckSelect("d1"+k+"_"+mid, p1.decks, ord(m.p1Played, m.p1DeckOrder, i))).join(" ")}
+                           <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p1.name}:${canEditP1 ? "" : " 🔒"}</div>
+                           ${["a","b","c"].map((k,i)=>deckSelect("d1"+k+"_"+mid, p1.decks, ord(m.p1Played, m.p1DeckOrder, i), !canEditP1)).join(" ")}
                         </div>
                         <div>
-                           <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p2.name}:</div>
-                           ${["a","b","c"].map((k,i)=>deckSelect("d2"+k+"_"+mid, p2.decks, ord(m.p2Played, m.p2DeckOrder, i))).join(" ")}
+                           <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p2.name}:${canEditP2 ? "" : " 🔒"}</div>
+                           ${["a","b","c"].map((k,i)=>deckSelect("d2"+k+"_"+mid, p2.decks, ord(m.p2Played, m.p2DeckOrder, i), !canEditP2)).join(" ")}
                         </div>
                      </div>
                      <div style="text-align:center;">
                         <button class="btn-accent" data-savereport="${mid}">💾 Guardar resultado</button>
                         ${winLabel ? `<span style="margin-left:10px; color:var(--success-color); font-weight:600;">${winLabel}</span>` : ""}
                      </div>
-                   </div>`
-                : `<div style="width:100%; text-align:center;">
-                     ${m.completed
-                        ? `<div style="font-size:15px; margin-bottom:6px;">Resultado: <strong>${g1v}</strong> – <strong>${g2v}</strong> &nbsp; <span style="color:var(--success-color); font-weight:600;">${winLabel}</span></div>`
-                        : `<div class="locked-note">⏳ Aún sin reportar.</div>`}
+                     ${lockNote}
+                   </div>`;
+            } else if (m.completed) {
+                const s1 = esc(playedList(m.p1Played, m.p1DeckOrder).join(", "));
+                const s2 = esc(playedList(m.p2Played, m.p2DeckOrder).join(", "));
+                actions = `<div style="width:100%; text-align:center;">
+                     <div style="font-size:16px; margin-bottom:6px;">Resultado: <strong>${g1v}</strong> – <strong>${g2v}</strong> &nbsp;·&nbsp; <span style="color:var(--success-color); font-weight:600;">${winLabel}</span></div>
+                     <div style="font-size:12px; color:var(--text-muted);">${esc(p1.name)}: ${s1} &nbsp;·&nbsp; ${esc(p2.name)}: ${s2}</div>
+                   </div>`;
+            } else {
+                actions = `<div style="width:100%; text-align:center;">
+                     <div class="locked-note">⏳ Aún sin reportar.</div>
                      <div class="locked-note">🔒 Solo el organizador o los jugadores de esta mesa pueden reportar.</div>
                    </div>`;
+            }
 
             wrapper.innerHTML += `
                 <div class="match-card ${isMine ? 'my-table' : ''}">
@@ -2065,6 +2175,9 @@
         $("btnWipe").addEventListener("click", resetTotal);
         $("btnStartTournament").addEventListener("click", createNewRound);
         $("btnGenerateRound").addEventListener("click", createNewRound);
+        $("btnStartRound").addEventListener("click", toggleRoundTimer);
+        $("btnRegenRound").addEventListener("click", regenerateRound);
+        $("btnEditRound").addEventListener("click", toggleEditRound);
         $("btnFinishTournament").addEventListener("click", finishTournament);
         $("btnToggleLateReg").addEventListener("click", toggleLateReg);
         $("btnAddRound").addEventListener("click", () => changeMaxRounds(1));
