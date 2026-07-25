@@ -192,6 +192,7 @@
         <button class="tab active" data-tab="registro">👥 Registro</button>
         <button class="tab" data-tab="rondas">⚔️ Rondas y Emparejamientos</button>
         <button class="tab" data-tab="posiciones">📊 Tabla de Posiciones</button>
+        <button class="tab" data-tab="jugadores">🧑‍🤝‍🧑 Jugadores</button>
         <button class="tab" data-tab="historial">📈 Historial</button>
         <button class="tab" data-tab="calendario">🎂 Calendario</button>
         <button class="tab" data-tab="reglas">📜 Reglas</button>
@@ -225,6 +226,7 @@
             </div>
         </div>
         <div id="registroForm" style="max-width: 640px; margin-bottom: 30px;">
+            <datalist id="pokeDatalist"></datalist>
             <h3>Datos del jugador</h3>
             <div class="form-group">
                 <label for="playerName">Nombre completo:</label>
@@ -247,20 +249,30 @@
             </div>
             <div class="form-group">
                 <label for="favPokemon">Pokémon favorito:</label>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <input type="text" id="favPokemon" placeholder="Ej: Charizard">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <input type="text" id="favPokemon" placeholder="Empieza a escribir: Char…" list="pokeDatalist" autocomplete="off">
                     <span id="favPreview" style="flex-shrink:0;"></span>
                 </div>
             </div>
             <div class="form-group">
                 <label>Top 5 Pokémon favoritos (opcional):</label>
-                <div class="fav-grid">
-                    <input type="text" id="top1" placeholder="1º">
-                    <input type="text" id="top2" placeholder="2º">
-                    <input type="text" id="top3" placeholder="3º">
-                    <input type="text" id="top4" placeholder="4º">
-                    <input type="text" id="top5" placeholder="5º">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px;">
+                    <div style="text-align:center;"><input type="text" id="top1" placeholder="1º" list="pokeDatalist" autocomplete="off"><div id="top1Preview" style="margin-top:6px;"></div></div>
+                    <div style="text-align:center;"><input type="text" id="top2" placeholder="2º" list="pokeDatalist" autocomplete="off"><div id="top2Preview" style="margin-top:6px;"></div></div>
+                    <div style="text-align:center;"><input type="text" id="top3" placeholder="3º" list="pokeDatalist" autocomplete="off"><div id="top3Preview" style="margin-top:6px;"></div></div>
+                    <div style="text-align:center;"><input type="text" id="top4" placeholder="4º" list="pokeDatalist" autocomplete="off"><div id="top4Preview" style="margin-top:6px;"></div></div>
+                    <div style="text-align:center;"><input type="text" id="top5" placeholder="5º" list="pokeDatalist" autocomplete="off"><div id="top5Preview" style="margin-top:6px;"></div></div>
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label>Elige tu avatar de entrenador:</label>
+                <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                    <span id="avatarCurrent"></span>
+                    <button type="button" class="btn-secondary" id="btnPickAvatar">🧢 Elegir avatar</button>
+                    <input type="hidden" id="selectedAvatar" value="">
+                </div>
+                <div id="avatarGrid" class="hidden" style="margin-top:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(56px,1fr)); gap:8px; max-height:220px; overflow-y:auto; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px;"></div>
             </div>
 
             <h3>Configuración de Decks</h3>
@@ -414,6 +426,15 @@
         <div id="historyDetail"></div>
     </div>
 
+    <!-- PESTAÑA: JUGADORES (ROSTER) -->
+    <div id="jugadores" class="panel">
+        <h2>🧑‍🤝‍🧑 Jugadores del Torneo</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">
+            Avatar, equipo de Pokémon favoritos y decks de cada jugador inscrito.
+        </p>
+        <div id="rosterGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;"></div>
+    </div>
+
     <!-- PESTAÑA: CALENDARIO -->
     <div id="calendario" class="panel">
         <h2>🎂 Calendario de Cumpleaños</h2>
@@ -561,6 +582,25 @@
     function pokeImg(name, size) { return pokeImgByNum(pokeNum(name), size); }
     function deckImg(deckName, size) { return pokeImgByNum(pokeNumInText(deckName), size); }
 
+    // Recuadro grande con la imagen del Pokémon (para previews de favoritos).
+    function pokeBox(name, size) {
+        const n = pokeNum(name); const s = size || 96;
+        if (!n) return `<div style="width:${s}px;height:${s}px;border:2px dashed var(--border-color);border-radius:10px;"></div>`;
+        const u1 = POKE_ICON_BASE + "/images/" + n + ".png";
+        const u2 = POKE_ICON_BASE + "/images2/" + n + ".png";
+        return `<img src="${u1}" data-alt="${u2}" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt='';}else{this.style.opacity=0.2;}" style="width:${s}px;height:${s}px;object-fit:contain;background:var(--bg-color);border:2px solid var(--accent-blue);border-radius:10px;padding:4px;">`;
+    }
+
+    /* ===== Avatares de entrenador (36 imágenes en /trainers) ===== */
+    const TRAINER_BASE = "https://regch10.github.io/app_pokemon/trainers";
+    const TRAINER_COUNT = 36;
+    function trainerUrl(n) { return TRAINER_BASE + "/" + encodeURIComponent("(" + n + ").png"); }
+    function avatarImg(n, size) {
+        const s = size || 40;
+        if (!n) return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:var(--panel-accent);border:2px solid var(--border-color);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(s/2)}px;vertical-align:middle;">👤</div>`;
+        return `<img src="${trainerUrl(n)}" loading="lazy" onerror="this.style.display='none'" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;border:2px solid var(--accent-yellow);vertical-align:middle;">`;
+    }
+
     const uid  = () => "_" + Math.random().toString(36).substr(2, 9);
     const slug = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || ("jugador-" + Date.now());
     const $ = (id) => document.getElementById(id);
@@ -658,6 +698,7 @@
         // el lienzo; si se crean ocultas, dibuja mal).
         if (tabId === "historial") renderHistorial();
         if (tabId === "calendario") renderBirthdays();
+        if (tabId === "jugadores") renderRoster();
     }
 
     /* ============================================================
@@ -677,6 +718,7 @@
         const bday  = $("playerBday").value;
         const favP  = $("favPokemon").value.trim();
         const topPokemons = ["top1","top2","top3","top4","top5"].map(i => $(i).value.trim()).filter(Boolean);
+        const avatar = $("selectedAvatar").value ? parseInt($("selectedAvatar").value, 10) : null;
         const decks = [
             { name: $("deck1Name").value.trim(), tier: $("deck1Tier").value },
             { name: $("deck2Name").value.trim(), tier: $("deck2Tier").value },
@@ -715,7 +757,7 @@
 
         const player = {
             id, name: pName, email, nick, birthday: bday || "",
-            favPokemon: favP, topPokemons, decks,
+            favPokemon: favP, topPokemons, decks, avatar,
             active: true, profileId, joinedRound,
             ownerUid: currentUser.uid,     // dueño = quien registra (para permisos)
             createdAt: serverTimestamp()
@@ -729,7 +771,7 @@
             try {
                 await setDoc(doc(PERFILES_COL, profileId), {
                     name: pName, email, nick, birthday: bday || "",
-                    favPokemon: favP, topPokemons,
+                    favPokemon: favP, topPokemons, avatar,
                     decksUsados: decks,   // {name, tier} para restaurar tier al re-inscribirse
                     lastTorneoId: estadoCache.torneoId,
                     updatedAt: serverTimestamp()
@@ -740,6 +782,9 @@
 
             ["playerName","playerEmail","playerNick","playerBday","favPokemon","top1","top2","top3","top4","top5","deck1Name","deck2Name","deck3Name"]
                 .forEach(i => { $(i).value = ""; });
+            ["favPreview","top1Preview","top2Preview","top3Preview","top4Preview","top5Preview","avatarCurrent"]
+                .forEach(i => { const el = $(i); if (el) el.innerHTML = ""; });
+            $("selectedAvatar").value = "";
             toast("✅ Jugador registrado");
         } catch (e) {
             console.error(e);
@@ -1203,6 +1248,62 @@
     }
 
     /* ============================================================
+       ROSTER DE JUGADORES (avatar + equipo + decks)
+    ============================================================ */
+    function renderRoster() {
+        const grid = $("rosterGrid");
+        if (!grid) return;
+        const list = Object.values(jugadoresCache);
+        if (!list.length) { grid.innerHTML = '<p style="color:var(--text-muted);">Aún no hay jugadores inscritos.</p>'; return; }
+        grid.innerHTML = list.map(p => {
+            const tops = (p.topPokemons || []).filter(Boolean);
+            const topHtml = tops.length
+                ? tops.map(t => `<span style="display:inline-flex;flex-direction:column;align-items:center;width:46px;">${pokeImg(t, 34)}<span style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46px;">${esc(t)}</span></span>`).join("")
+                : '<span style="font-size:12px;color:var(--text-muted);">—</span>';
+            const decksHtml = (p.decks || []).map(d => `<div style="font-size:12px;display:flex;align-items:center;gap:6px;padding:2px 0;">${deckImg(d.name, 18)} <span>${esc(d.name)}</span> <span class="tier-badge ${getTierClass(d.tier)}">${d.tier}</span></div>`).join("");
+            return `<div style="background:var(--panel-accent);border:1px solid var(--border-color);border-radius:10px;padding:16px;">
+                <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+                    ${avatarImg(p.avatar, 64)}
+                    <div style="min-width:0;">
+                        <div style="font-weight:bold;font-size:16px;">${esc(p.name)}${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">${p.nick ? ('@' + esc(p.nick)) : ''}</div>
+                        <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;">${esc(p.email || '')}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+                    ${pokeBox(p.favPokemon, 80)}
+                    <div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Favorito</div>
+                        <div style="font-weight:600;">${esc(p.favPokemon || '—')}</div>
+                    </div>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Equipo top-5</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${topHtml}</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Decks</div>
+                ${decksHtml}
+            </div>`;
+        }).join("");
+    }
+
+    /* ===== Selector de avatar ===== */
+    function renderAvatarGrid() {
+        const g = $("avatarGrid");
+        if (!g || g.dataset.built) return;
+        let h = "";
+        for (let i = 1; i <= TRAINER_COUNT; i++) {
+            h += `<img src="${trainerUrl(i)}" data-avatar="${i}" loading="lazy" title="Avatar ${i}" onerror="this.style.display='none'" style="width:52px;height:52px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid var(--border-color);">`;
+        }
+        g.innerHTML = h; g.dataset.built = "1";
+    }
+    function setAvatar(n) {
+        $("selectedAvatar").value = n || "";
+        $("avatarCurrent").innerHTML = avatarImg(n, 56);
+        document.querySelectorAll("#avatarGrid img").forEach(im => {
+            im.style.borderColor = (im.dataset.avatar === String(n)) ? "var(--accent-yellow)" : "var(--border-color)";
+        });
+    }
+
+    /* ============================================================
        RENDER
     ============================================================ */
     function getTierClass(tier) {
@@ -1218,7 +1319,7 @@
         list.forEach(p => {
             tbody.innerHTML += `
                 <tr>
-                    <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">Entró R${p.joinedRound}</span>` : ''}</td>
+                    <td><span style="display:inline-flex;align-items:center;gap:6px;">${avatarImg(p.avatar, 24)} <strong>${p.name}</strong></span>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">Entró R${p.joinedRound}</span>` : ''}</td>
                     <td>${p.nick || '-'}</td>
                     <td>${deckImg(p.decks[0].name, 18)} ${p.decks[0].name} <span class="tier-badge ${getTierClass(p.decks[0].tier)}">${p.decks[0].tier}</span></td>
                     <td>${deckImg(p.decks[1].name, 18)} ${p.decks[1].name} <span class="tier-badge ${getTierClass(p.decks[1].tier)}">${p.decks[1].tier}</span></td>
@@ -1686,6 +1787,7 @@
         renderStandings();
         renderHistorial();
         renderBirthdays();
+        renderRoster();
         updateIdentityUI();
     }
 
@@ -1860,6 +1962,10 @@
         setIf("favPokemon", p.favPokemon);
         const tops = p.topPokemons || [];
         ["top1","top2","top3","top4","top5"].forEach((id, i) => setIf(id, tops[i]));
+        if (p.avatar && (force || !$("selectedAvatar").value)) setAvatar(p.avatar);
+        // refrescar recuadros de imagen tras autocompletar
+        if ($("favPokemon").value) $("favPreview").innerHTML = pokeBox($("favPokemon").value, 72);
+        ["top1","top2","top3","top4","top5"].forEach(id => { if ($(id).value) $(id + "Preview").innerHTML = pokeImg($(id).value, 44); });
         const decks = p.decksUsados || [];
         [["deck1Name","deck1Tier"],["deck2Name","deck2Tier"],["deck3Name","deck3Tier"]].forEach((pair, i) => {
             const item = decks[i];
@@ -1972,8 +2078,22 @@
         $("btnPlayerReset").addEventListener("click", () => sendReset("idEmail"));
         $("btnAdminReset").addEventListener("click", () => sendReset("adminEmail"));
         $("btnPrefill").addEventListener("click", () => prefillFromPerfil(true));
-        $("favPokemon").addEventListener("input", () => {
-            $("favPreview").innerHTML = pokeImg($("favPokemon").value, 32);
+        // Sugerencias de Pokémon (datalist con los 1025 nombres)
+        const dl = $("pokeDatalist");
+        if (dl && window.POKE_NAMES) dl.innerHTML = window.POKE_NAMES.map(n => `<option value="${esc(n)}"></option>`).join("");
+        // Preview grande del favorito + previews del top-5
+        const favEl = $("favPokemon");
+        if (favEl) favEl.addEventListener("input", () => {
+            $("favPreview").innerHTML = favEl.value.trim() ? pokeBox(favEl.value, 72) : "";
+        });
+        ["top1", "top2", "top3", "top4", "top5"].forEach(id => {
+            const el = $(id);
+            if (el) el.addEventListener("input", () => { $(id + "Preview").innerHTML = pokeImg(el.value, 44); });
+        });
+        // Avatar
+        $("btnPickAvatar").addEventListener("click", () => {
+            renderAvatarGrid();
+            $("avatarGrid").classList.toggle("hidden");
         });
         $("historyPlayerSelect").addEventListener("change", renderHistoryDetail);
         $("btnExportCsv").addEventListener("click", exportHistorialCSV);
@@ -1985,6 +2105,8 @@
             if (rep) { reportMatch(rep.dataset.report, rep.dataset.result); return; }
             const save = e.target.closest("[data-savereport]");
             if (save) { reportMatchFull(save.dataset.savereport); return; }
+            const av = e.target.closest("[data-avatar]");
+            if (av) { setAvatar(av.dataset.avatar); return; }
             const vr = e.target.closest("[data-viewround]");
             if (vr) {
                 const rs = roundsFromMatches();
