@@ -694,7 +694,13 @@
             roundMatches.forEach(m => {
                 batch.set(doc(db, "rondas", "r" + roundNumber, "matches", m.matchId), m);
             });
-            batch.update(ESTADO_REF, { currentRoundNumber: roundNumber, maxRounds });
+            // set con merge: crea el documento si no existe (auto-reparación) o
+            // lo actualiza si ya está. Evita el error "No document to update".
+            const torneoId = estadoCache.torneoId || ("T" + Date.now());
+            batch.set(ESTADO_REF, {
+                currentRoundNumber: roundNumber, maxRounds,
+                isFinished: false, torneoId
+            }, { merge: true });
             await batch.commit();
             toast("⚔️ Ronda " + roundNumber + " generada");
         } catch (e) {
@@ -731,7 +737,7 @@
             alert("❌ Hay partidos sin reportar. Completa todos los resultados."); return;
         }
         try {
-            await updateDoc(ESTADO_REF, { isFinished: true });
+            await setDoc(ESTADO_REF, { isFinished: true }, { merge: true });
 
             const { players } = buildDerived();
             const standings = sortStandings(players);
@@ -1222,8 +1228,10 @@
     }
 
     function recomputeAdmin() {
-        isAdmin = !!(currentUser && !currentUser.isAnonymous &&
-                     (adminCache.adminUids || []).includes(currentUser.uid));
+        // adminUids DEBE ser un array (lista) en Firestore. Si estuviera mal
+        // configurado como texto, no se considera admin (coincide con las reglas).
+        const uids = Array.isArray(adminCache.adminUids) ? adminCache.adminUids : [];
+        isAdmin = !!(currentUser && !currentUser.isAnonymous && uids.includes(currentUser.uid));
         applyRoleUI();
         renderAll();
     }
