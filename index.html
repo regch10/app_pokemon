@@ -210,87 +210,113 @@
             <span class="hint" style="font-size:12px; color:var(--text-muted); flex:1; min-width:200px;">Ábrelo para que quien llegó tarde se inscriba <strong>desde su propio teléfono</strong> y controle su mesa (entra con derrotas). Ciérralo al terminar.</span>
         </div>
 
-        <!-- IDENTIDAD DEL JUGADOR (para conservar tu jugador entre dispositivos) -->
-        <div id="identityCard" class="admin-bar" style="margin-bottom:20px;">
-            <div id="identityAnon" style="display:flex; gap:10px; flex-wrap:wrap; width:100%;">
-                <p class="hint" style="margin-bottom:4px;">🔒 <strong>Guarda tu identidad</strong> para recuperar tu jugador y reportar tu mesa desde cualquier teléfono. Sin esto, si cambias de dispositivo o borras datos, perderás el control de tu jugador (el organizador podrá reportar por ti).</p>
-                <input type="email" id="idEmail" placeholder="Tu correo" autocomplete="username">
-                <input type="password" id="idPass" placeholder="Crea/usa una contraseña" autocomplete="current-password">
-                <button class="btn-primary" id="btnLinkIdentity">🔗 Vincular a este jugador</button>
-                <button class="btn-secondary" id="btnPlayerSignIn">Ya tengo cuenta · Iniciar sesión</button>
-                <button class="btn-secondary" id="btnPlayerReset" style="background:none; border:none; color:var(--accent-blue); text-decoration:underline; padding:6px;">¿Olvidaste tu contraseña?</button>
+        <datalist id="pokeDatalist"></datalist>
+
+        <!-- BLOQUE CUENTA: registro / login (visible sin cuenta) -->
+        <div id="accountGate" style="max-width: 640px; margin-bottom: 30px;">
+            <p class="hint" style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Para participar necesitas una cuenta. Regístrate una vez (tu perfil se guarda para todos los torneos) y luego solo cargas tus decks.</p>
+            <div id="accountTabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+                <button class="btn-accent" id="tabRegister">🆕 Regístrate</button>
+                <button class="btn-secondary" id="tabLogin">🔑 Ya tengo cuenta</button>
             </div>
-            <div id="identityLogged" class="hidden" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; width:100%;">
-                <span id="identityWho" style="font-weight:600;"></span>
-                <button class="btn-secondary" id="btnPlayerLogout">Cerrar sesión</button>
+
+            <div id="registerBox">
+                <h3 id="regFormTitle">Crea tu cuenta y perfil</h3>
+                <div class="form-group">
+                    <label for="playerName">Nombre completo:</label>
+                    <input type="text" id="playerName" placeholder="Ej: Roberto Granados">
+                </div>
+                <div class="fav-grid">
+                    <div class="form-group" style="margin:0;">
+                        <label for="playerEmail">Correo:</label>
+                        <input type="email" id="playerEmail" placeholder="jugador@correo.com" autocomplete="username">
+                    </div>
+                    <div class="form-group" id="regPassGroup" style="margin:0;">
+                        <label for="regPassword">Contraseña (6+ caracteres):</label>
+                        <input type="password" id="regPassword" placeholder="Crea una contraseña" autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="fav-grid">
+                    <div class="form-group" style="margin:0;">
+                        <label for="playerNick">Nickname:</label>
+                        <input type="text" id="playerNick" placeholder="Ej: RedKetchum">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label for="playerBday">Fecha de cumpleaños:</label>
+                        <input type="date" id="playerBday">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="favPokemon">Pokémon favorito:</label>
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <input type="text" id="favPokemon" placeholder="Empieza a escribir: Char…" list="pokeDatalist" autocomplete="off">
+                        <span id="favPreview" style="flex-shrink:0;"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Top 5 Pokémon favoritos (opcional):</label>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px;">
+                        <div style="text-align:center;"><input type="text" id="top1" placeholder="1º" list="pokeDatalist" autocomplete="off"><div id="top1Preview" style="margin-top:6px;"></div></div>
+                        <div style="text-align:center;"><input type="text" id="top2" placeholder="2º" list="pokeDatalist" autocomplete="off"><div id="top2Preview" style="margin-top:6px;"></div></div>
+                        <div style="text-align:center;"><input type="text" id="top3" placeholder="3º" list="pokeDatalist" autocomplete="off"><div id="top3Preview" style="margin-top:6px;"></div></div>
+                        <div style="text-align:center;"><input type="text" id="top4" placeholder="4º" list="pokeDatalist" autocomplete="off"><div id="top4Preview" style="margin-top:6px;"></div></div>
+                        <div style="text-align:center;"><input type="text" id="top5" placeholder="5º" list="pokeDatalist" autocomplete="off"><div id="top5Preview" style="margin-top:6px;"></div></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Elige tu avatar de entrenador:</label>
+                    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                        <span id="avatarCurrent"></span>
+                        <button type="button" class="btn-secondary" id="btnPickAvatar">🧢 Elegir avatar</button>
+                        <input type="hidden" id="selectedAvatar" value="">
+                    </div>
+                    <div id="avatarGrid" class="hidden" style="margin-top:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:10px; max-height:320px; overflow-y:auto; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px;"></div>
+                </div>
+                <button class="btn-accent" style="margin-top: 10px;" id="btnCreateAccount">✅ Crear cuenta y perfil</button>
+                <button class="btn-secondary hidden" style="margin-top: 10px;" id="btnCancelEdit">Cancelar</button>
+            </div>
+
+            <div id="loginBox" class="hidden">
+                <h3>Ingresa con tu cuenta</h3>
+                <div class="form-group">
+                    <label for="loginEmail">Correo:</label>
+                    <input type="email" id="loginEmail" placeholder="jugador@correo.com" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña:</label>
+                    <input type="password" id="loginPassword" placeholder="Tu contraseña" autocomplete="current-password">
+                </div>
+                <button class="btn-accent" id="btnAccountLogin">🔑 Ingresar</button>
+                <button class="btn-secondary" id="btnAccountReset" style="background:none; border:none; color:var(--accent-blue); text-decoration:underline; padding:6px;">¿Olvidaste tu contraseña?</button>
             </div>
         </div>
-        <div id="registroForm" style="max-width: 640px; margin-bottom: 30px;">
-            <datalist id="pokeDatalist"></datalist>
-            <h3>Datos del jugador</h3>
-            <div class="form-group">
-                <label for="playerName">Nombre completo:</label>
-                <input type="text" id="playerName" placeholder="Ej: Roberto Granados">
-            </div>
-            <div class="form-group">
-                <label for="playerEmail">Correo del jugador (opcional, recomendado):</label>
-                <input type="email" id="playerEmail" placeholder="Ej: jugador@correo.com">
-                <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Sirve como identidad estable: si el organizador registra a la misma persona en otro torneo con el mismo correo, su historial se acumula en vez de duplicarse.</p>
-            </div>
-            <div class="fav-grid">
-                <div class="form-group" style="margin:0;">
-                    <label for="playerNick">Nickname:</label>
-                    <input type="text" id="playerNick" placeholder="Ej: RedKetchum">
-                </div>
-                <div class="form-group" style="margin:0;">
-                    <label for="playerBday">Fecha de cumpleaños:</label>
-                    <input type="date" id="playerBday">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="favPokemon">Pokémon favorito:</label>
-                <div style="display:flex; align-items:center; gap:14px;">
-                    <input type="text" id="favPokemon" placeholder="Empieza a escribir: Char…" list="pokeDatalist" autocomplete="off">
-                    <span id="favPreview" style="flex-shrink:0;"></span>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Top 5 Pokémon favoritos (opcional):</label>
-                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px;">
-                    <div style="text-align:center;"><input type="text" id="top1" placeholder="1º" list="pokeDatalist" autocomplete="off"><div id="top1Preview" style="margin-top:6px;"></div></div>
-                    <div style="text-align:center;"><input type="text" id="top2" placeholder="2º" list="pokeDatalist" autocomplete="off"><div id="top2Preview" style="margin-top:6px;"></div></div>
-                    <div style="text-align:center;"><input type="text" id="top3" placeholder="3º" list="pokeDatalist" autocomplete="off"><div id="top3Preview" style="margin-top:6px;"></div></div>
-                    <div style="text-align:center;"><input type="text" id="top4" placeholder="4º" list="pokeDatalist" autocomplete="off"><div id="top4Preview" style="margin-top:6px;"></div></div>
-                    <div style="text-align:center;"><input type="text" id="top5" placeholder="5º" list="pokeDatalist" autocomplete="off"><div id="top5Preview" style="margin-top:6px;"></div></div>
-                </div>
+
+        <!-- BLOQUE UNIRSE: perfil + decks (visible con cuenta) -->
+        <div id="joinPanel" class="hidden" style="max-width: 640px; margin-bottom: 30px;">
+            <div id="profileSummary" style="display:flex; gap:14px; align-items:center; background:var(--panel-accent); border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-bottom:14px; flex-wrap:wrap;"></div>
+            <div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
+                <button class="btn-secondary" id="btnEditProfile">✏️ Editar perfil</button>
+                <button class="btn-secondary" id="btnLogoutAccount">Cerrar sesión</button>
             </div>
 
-            <div class="form-group">
-                <label>Elige tu avatar de entrenador:</label>
-                <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                    <span id="avatarCurrent"></span>
-                    <button type="button" class="btn-secondary" id="btnPickAvatar">🧢 Elegir avatar</button>
-                    <input type="hidden" id="selectedAvatar" value="">
+            <div id="joinDecks">
+                <h3>Tus 3 decks para este torneo</h3>
+                <div class="deck-grid">
+                    <input type="text" id="deck1Name" placeholder="Mazo 1">
+                    <select id="deck1Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S (Máx. 1)</option><option value="FUN">Tier FUN</option></select>
                 </div>
-                <div id="avatarGrid" class="hidden" style="margin-top:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:10px; max-height:320px; overflow-y:auto; padding:10px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px;"></div>
+                <div class="deck-grid">
+                    <input type="text" id="deck2Name" placeholder="Mazo 2">
+                    <select id="deck2Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S</option><option value="FUN">Tier FUN</option></select>
+                </div>
+                <div class="deck-grid">
+                    <input type="text" id="deck3Name" placeholder="Mazo 3">
+                    <select id="deck3Tier"><option value="FUN" selected>Tier FUN</option><option value="Tier S">Tier S</option><option value="Tier 1-4">Tier 1 a 4</option></select>
+                </div>
+                <button class="btn-accent" style="margin-top: 10px;" id="btnJoinTournament">➕ Inscribirme en el torneo</button>
+                <p id="registerHint" style="font-size: 12px; color: var(--text-muted); margin-top: 10px;"></p>
             </div>
-
-            <h3>Configuración de Decks</h3>
-            <div class="deck-grid">
-                <input type="text" id="deck1Name" placeholder="Mazo 1">
-                <select id="deck1Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S (Máx. 1)</option><option value="FUN">Tier FUN</option></select>
-            </div>
-            <div class="deck-grid">
-                <input type="text" id="deck2Name" placeholder="Mazo 2">
-                <select id="deck2Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S</option><option value="FUN">Tier FUN</option></select>
-            </div>
-            <div class="deck-grid">
-                <input type="text" id="deck3Name" placeholder="Mazo 3">
-                <select id="deck3Tier"><option value="FUN" selected>Tier FUN</option><option value="Tier S">Tier S</option><option value="Tier 1-4">Tier 1 a 4</option></select>
-            </div>
-            <button class="btn-accent" style="margin-top: 10px;" id="btnRegister">➕ Añadir Jugador</button>
-            <button class="btn-secondary hidden" style="margin-top: 10px;" id="btnPrefill">🔄 Usar mis datos guardados</button>
-            <p id="registerHint" style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">El registro se bloquea automáticamente al iniciar la primera ronda. En tu teléfono quedas vinculado como el jugador que registres.</p>
+            <div id="alreadyJoined" class="hidden" style="background:var(--success-bg); border:1px solid var(--success-color); color:var(--success-color); border-radius:8px; padding:14px; font-weight:600;"></div>
         </div>
 
         <h2>Lista de Inscritos (<span id="countDisplay">0</span>)</h2>
@@ -492,7 +518,7 @@
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import {
         getAuth, onAuthStateChanged, signInAnonymously,
-        signInWithEmailAndPassword, signOut,
+        signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword,
         EmailAuthProvider, linkWithCredential, sendPasswordResetEmail
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
@@ -537,11 +563,11 @@
 
     let myPerfilCache  = null; // perfil del usuario actual (para autocompletar)
     let myPerfilUnsub  = null; // desuscriptor del listener de mi perfil
-    let prefilledOnce  = false;
 
     // Fase 1: visualización de rondas pasadas + cronómetro
     let viewedRound   = null;              // ronda que se está viendo (null = ronda actual)
     let showEditForms = false;             // modo edición de resultados (botón "Editar Ronda")
+    let editingProfile = false;            // editando el perfil (bloque de cuenta abierto con sesión)
     const ROUND_SECONDS = 50 * 60;          // 50 minutos por ronda
     let alarmFiredFor = null;               // timerEndsAt para el que ya sonó la alarma
     const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -713,100 +739,225 @@
     /* ============================================================
        REGISTRO
     ============================================================ */
-    async function registerPlayer() {
-        if (!currentUser) { toast("Conectando… intenta de nuevo en un segundo"); return; }
+    /* ============================================================
+       CUENTA + PERFIL (registro obligatorio con correo/contraseña)
+    ============================================================ */
+    // Guarda el perfil (perfiles/{uid}) con los datos del formulario de cuenta.
+    async function saveProfileDoc() {
+        const profile = {
+            name: $("playerName").value.trim(),
+            email: $("playerEmail").value.trim().toLowerCase(),
+            nick: $("playerNick").value.trim(),
+            birthday: $("playerBday").value || "",
+            favPokemon: $("favPokemon").value.trim(),
+            topPokemons: ["top1","top2","top3","top4","top5"].map(i => $(i).value.trim()).filter(Boolean),
+            avatar: $("selectedAvatar").value ? parseInt($("selectedAvatar").value, 10) : null,
+            updatedAt: serverTimestamp()
+        };
+        await setDoc(doc(PERFILES_COL, currentUser.uid), profile, { merge: true });
+    }
+
+    // Crea la cuenta (o guarda cambios si ya hay cuenta) y escribe el perfil.
+    async function registerAccount() {
+        if (!currentUser) { toast("Conectando…"); return; }
+        const name = $("playerName").value.trim();
+        const email = $("playerEmail").value.trim().toLowerCase();
+        const pass = $("regPassword").value;
+        const hasAccount = currentUser && !currentUser.isAnonymous;
+        if (!name) { alert("❌ Ingresa tu nombre."); return; }
+        if (!email) { alert("❌ Ingresa tu correo."); return; }
+        if (!hasAccount && pass.length < 6) { alert("❌ La contraseña debe tener 6 o más caracteres."); return; }
+        try {
+            if (!hasAccount) {
+                if (currentUser.isAnonymous) {
+                    // Sube la sesión anónima a cuenta permanente (conserva el uid).
+                    await linkWithCredential(currentUser, EmailAuthProvider.credential(email, pass));
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                }
+            }
+            await saveProfileDoc();
+            $("regPassword").value = "";
+            editingProfile = false;
+            toast(hasAccount ? "✅ Perfil actualizado" : "✅ Cuenta y perfil creados");
+            renderRegistroState();
+        } catch (e) {
+            console.error(e);
+            if (e.code === "auth/email-already-in-use" || e.code === "auth/credential-already-in-use") {
+                alert("Ese correo ya tiene cuenta. Usa \"Ya tengo cuenta\" para ingresar.");
+                showLoginMode();
+            } else { alert("❌ No se pudo crear la cuenta: " + e.message); }
+        }
+    }
+
+    async function accountLogin() {
+        const email = $("loginEmail").value.trim();
+        const pass = $("loginPassword").value;
+        if (!email || !pass) { toast("Ingresa correo y contraseña"); return; }
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            $("loginPassword").value = "";
+            toast("🔑 Sesión iniciada");
+        } catch (e) {
+            console.error(e);
+            alert("❌ No se pudo iniciar sesión: " + e.message);
+        }
+    }
+
+    async function accountLogout() {
+        try {
+            localStorage.removeItem(LS_PLAYER); myPlayerId = null;
+            await signOut(auth);   // onAuthStateChanged vuelve a firmar anónimo
+            toast("Sesión cerrada");
+        } catch (e) { console.error(e); }
+    }
+
+    // Inscribe al jugador en el torneo actual (perfil ya existe; solo faltan decks).
+    async function joinTournament() {
+        if (!currentUser || currentUser.isAnonymous) { toast("Primero crea tu cuenta"); return; }
+        const prof = myPerfilCache;
+        if (!prof) { toast("Completa tu perfil primero"); editProfile(); return; }
+
         const torneoEnCurso = estadoCache.currentRoundNumber > 0;
         const lateOpen = !!estadoCache.lateRegistrationOpen;
         if (torneoEnCurso && !isAdmin && !lateOpen) {
-            alert("❌ El torneo ya comenzó y el registro tardío está cerrado. Pide al organizador que lo abra para inscribirte.");
-            return;
+            alert("❌ El torneo ya comenzó y el registro tardío está cerrado. Pide al organizador que lo abra."); return;
         }
-        const pName = $("playerName").value.trim();
-        const email = $("playerEmail").value.trim().toLowerCase();
-        const nick  = $("playerNick").value.trim();
-        const bday  = $("playerBday").value;
-        const favP  = $("favPokemon").value.trim();
-        const topPokemons = ["top1","top2","top3","top4","top5"].map(i => $(i).value.trim()).filter(Boolean);
-        const avatar = $("selectedAvatar").value ? parseInt($("selectedAvatar").value, 10) : null;
         const decks = [
             { name: $("deck1Name").value.trim(), tier: $("deck1Tier").value },
             { name: $("deck2Name").value.trim(), tier: $("deck2Tier").value },
             { name: $("deck3Name").value.trim(), tier: $("deck3Tier").value }
         ];
+        if (decks.some(d => !d.name)) { alert("❌ Ingresa tus 3 decks."); return; }
+        if (decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S."); return; }
 
-        if (!pName || decks.some(d => !d.name)) { alert("❌ Ingresa el nombre del jugador y los 3 decks."); return; }
-        if (decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S por jugador."); return; }
-
-        // Evita jugadores duplicados en el MISMO torneo: mismo correo, o la misma
-        // cuenta (para jugadores; el organizador sí puede inscribir a varios).
+        const email = (prof.email || currentUser.email || "").toLowerCase();
+        // Un correo = un jugador por torneo.
+        if (Object.values(jugadoresCache).some(p => p.ownerUid === currentUser.uid)) {
+            alert("❌ Ya estás inscrito en este torneo con esta cuenta."); return;
+        }
         if (email && Object.values(jugadoresCache).some(p => (p.email || "").toLowerCase() === email)) {
             alert("❌ Ya hay un jugador inscrito con ese correo en este torneo."); return;
         }
-        if (!isAdmin && Object.values(jugadoresCache).some(p => p.ownerUid === currentUser.uid)) {
-            alert("❌ Ya inscribiste un jugador en este torneo con esta cuenta."); return;
-        }
+
+        const joinedRound = torneoEnCurso ? (estadoCache.currentRoundNumber + 1) : 0;
+        if (torneoEnCurso && !confirm(`Te vas a inscribir con el torneo en curso.\n\nEntrarás en la Ronda ${joinedRound} con ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.\n\n¿Continuar?`)) return;
 
         const id = uid();
-        // Clave de perfil (para no duplicar historial entre torneos):
-        //  1) Si se indicó CORREO -> clave estable derivada del correo. Así, si
-        //     el organizador registra a la misma persona en otro torneo con el
-        //     mismo correo, su historial se acumula (no se duplica).
-        //  2) Si NO hay correo y es el PRIMER jugador de mi sesión -> mi uid
-        //     (mi propia identidad, vinculable entre torneos).
-        //  3) Si NO hay correo y ya registré otros -> id propio del jugador
-        //     (evita pisar perfiles, pero no se puede deduplicar sin correo).
-        const yaTengoJugador = Object.values(jugadoresCache).some(p => p.ownerUid === currentUser.uid);
-        // Si el ADMIN registra a otra persona con el torneo en curso, el perfil se
-        // guarda con el id del jugador (no con el uid del admin). Si el jugador se
-        // inscribe a sí mismo (registro tardío), usa su propio uid como identidad.
-        const adminAddingOther = isAdmin && torneoEnCurso;
-        const profileId = email ? ("mail_" + slug(email))
-                                 : ((yaTengoJugador || adminAddingOther) ? id : currentUser.uid);
-
-        // Jugador tardío: entra en la SIGUIENTE ronda y arrastra una derrota por
-        // cada ronda ya jugada (0 puntos). joinedRound = 0 => se inscribió a tiempo.
-        const joinedRound = torneoEnCurso ? (estadoCache.currentRoundNumber + 1) : 0;
-        if (torneoEnCurso) {
-            const msg = isAdmin
-                ? `Vas a inscribir a "${pName}" con el torneo en curso.\n\nEntrará en la Ronda ${joinedRound} y arrastrará ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.\n\n¿Continuar?`
-                : `Te vas a inscribir con el torneo en curso.\n\nEntrarás en la Ronda ${joinedRound} con ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.\n\n¿Continuar?`;
-            if (!confirm(msg)) return;
-        }
-
         const player = {
-            id, name: pName, email, nick, birthday: bday || "",
-            favPokemon: favP, topPokemons, decks, avatar,
-            active: true, profileId, joinedRound,
-            ownerUid: currentUser.uid,     // dueño = quien registra (para permisos)
-            createdAt: serverTimestamp()
+            id, name: prof.name || "", email,
+            nick: prof.nick || "", birthday: prof.birthday || "",
+            favPokemon: prof.favPokemon || "", topPokemons: prof.topPokemons || [],
+            avatar: (prof.avatar != null ? prof.avatar : null),
+            decks, active: true, profileId: currentUser.uid, joinedRound,
+            ownerUid: currentUser.uid, createdAt: serverTimestamp()
         };
-
         try {
             await setDoc(doc(JUGADORES_COL, id), player);
-
-            // El perfil es un extra para estadísticas: si falla no debe romper
-            // el registro del jugador (que es lo que importa para el torneo).
             try {
-                await setDoc(doc(PERFILES_COL, profileId), {
-                    name: pName, email, nick, birthday: bday || "",
-                    favPokemon: favP, topPokemons, avatar,
-                    decksUsados: decks,   // {name, tier} para restaurar tier al re-inscribirse
-                    lastTorneoId: estadoCache.torneoId,
-                    updatedAt: serverTimestamp()
+                await setDoc(doc(PERFILES_COL, currentUser.uid), {
+                    decksUsados: decks, lastTorneoId: estadoCache.torneoId, updatedAt: serverTimestamp()
                 }, { merge: true });
-            } catch (pe) { console.warn("Perfil no guardado (no crítico):", pe.message); }
-
-            if (!myPlayerId) { myPlayerId = id; localStorage.setItem(LS_PLAYER, id); }
-
-            ["playerName","playerEmail","playerNick","playerBday","favPokemon","top1","top2","top3","top4","top5","deck1Name","deck2Name","deck3Name"]
-                .forEach(i => { $(i).value = ""; });
-            ["favPreview","top1Preview","top2Preview","top3Preview","top4Preview","top5Preview","avatarCurrent"]
-                .forEach(i => { const el = $(i); if (el) el.innerHTML = ""; });
-            $("selectedAvatar").value = "";
-            toast("✅ Jugador registrado");
+            } catch (pe) { console.warn("Perfil (decks) no guardado:", pe.message); }
+            myPlayerId = id; localStorage.setItem(LS_PLAYER, id);
+            toast("✅ Inscrito en el torneo");
         } catch (e) {
             console.error(e);
-            alert("❌ Error al guardar en Firestore: " + e.message);
+            alert("❌ Error al inscribirte: " + e.message);
+        }
+    }
+
+    /* ===== UI del registro (cuenta vs unirse) ===== */
+    function showRegisterMode(edit) {
+        $("registerBox").classList.remove("hidden");
+        $("loginBox").classList.add("hidden");
+        $("tabRegister").className = "btn-accent";
+        $("tabLogin").className = "btn-secondary";
+        $("regPassGroup").style.display = edit ? "none" : "";
+        $("regFormTitle").textContent = edit ? "Editar tu perfil" : "Crea tu cuenta y perfil";
+        $("btnCreateAccount").textContent = edit ? "💾 Guardar cambios" : "✅ Crear cuenta y perfil";
+        $("btnCancelEdit").classList.toggle("hidden", !edit);
+        $("accountTabs").style.display = edit ? "none" : "flex";
+    }
+    function showLoginMode() {
+        $("registerBox").classList.add("hidden");
+        $("loginBox").classList.remove("hidden");
+        $("tabRegister").className = "btn-secondary";
+        $("tabLogin").className = "btn-accent";
+    }
+    function editProfile() {
+        editingProfile = true;
+        prefillFromPerfil(true);
+        renderRegistroState();
+    }
+    function cancelEdit() {
+        editingProfile = false;
+        renderRegistroState();
+    }
+
+    function renderProfileSummary() {
+        const prof = myPerfilCache;
+        const el = $("profileSummary");
+        if (!el) return;
+        if (!prof) {
+            el.innerHTML = `<span style="color:var(--text-muted);">Aún no has completado tu perfil.</span>`;
+            return;
+        }
+        el.innerHTML = `${avatarImg(prof.avatar, 60)}
+            <div style="min-width:0;">
+                <div style="font-weight:bold; font-size:16px;">${esc(prof.name || "")}</div>
+                <div style="font-size:12px; color:var(--text-muted);">${prof.nick ? ("@" + esc(prof.nick) + " · ") : ""}${esc(prof.email || (currentUser && currentUser.email) || "")}</div>
+                <div style="font-size:12px; margin-top:4px; display:inline-flex; align-items:center; gap:6px;">${prof.favPokemon ? pokeImg(prof.favPokemon, 22) + " " + esc(prof.favPokemon) : ""}</div>
+            </div>`;
+    }
+
+    function renderJoinState() {
+        const mine = currentUser && Object.values(jugadoresCache).find(p => p.ownerUid === currentUser.uid);
+        const torneoEnCurso = estadoCache.currentRoundNumber > 0;
+        const lateOpen = !!estadoCache.lateRegistrationOpen;
+        const canJoin = !!myPerfilCache && (!torneoEnCurso || isAdmin || lateOpen);
+
+        if (mine) {
+            $("joinDecks").classList.add("hidden");
+            $("alreadyJoined").classList.remove("hidden");
+            $("alreadyJoined").innerHTML = `✅ Ya estás inscrito como <strong>${esc(mine.name)}</strong> con: ${(mine.decks || []).map(d => esc(d.name)).join(", ")}.`;
+            return;
+        }
+        $("alreadyJoined").classList.add("hidden");
+        $("joinDecks").classList.toggle("hidden", !canJoin);
+        // Prefill de decks desde el último torneo
+        if (canJoin && myPerfilCache && myPerfilCache.decksUsados && !$("deck1Name").value) {
+            const du = myPerfilCache.decksUsados;
+            [["deck1Name","deck1Tier"],["deck2Name","deck2Tier"],["deck3Name","deck3Tier"]].forEach((pair, i) => {
+                const it = du[i]; if (!it) return;
+                const nm = typeof it === "string" ? it : (it.name || "");
+                const tr = typeof it === "object" ? (it.tier || "") : "";
+                if (nm) { $(pair[0]).value = nm; if (tr) $(pair[1]).value = tr; }
+            });
+        }
+        const hint = $("registerHint");
+        if (hint) {
+            if (torneoEnCurso && !canJoin) hint.textContent = "El torneo ya comenzó y el registro tardío está cerrado. Pide al organizador que lo abra.";
+            else if (torneoEnCurso && lateOpen) hint.innerHTML = `⏳ Entrarás en la Ronda ${estadoCache.currentRoundNumber + 1} con ${estadoCache.currentRoundNumber} derrota(s).`;
+            else hint.textContent = "La inscripción se cierra al iniciar la primera ronda.";
+        }
+    }
+
+    // Muestra el bloque de cuenta o el de unirse según la sesión.
+    function renderRegistroState() {
+        const loggedAccount = currentUser && !currentUser.isAnonymous;
+        // Si tiene cuenta pero aún no hay perfil, abre el editor para completarlo.
+        if (loggedAccount && !myPerfilCache && !editingProfile) editingProfile = true;
+
+        $("accountGate").classList.toggle("hidden", loggedAccount && !editingProfile);
+        $("joinPanel").classList.toggle("hidden", !loggedAccount || editingProfile);
+
+        if (editingProfile) showRegisterMode(true);
+        else if (!loggedAccount) { /* deja el modo (registro/login) que eligió el usuario */ }
+
+        if (loggedAccount && !editingProfile) {
+            renderProfileSummary();
+            renderJoinState();
         }
     }
 
@@ -1414,16 +1565,9 @@
         });
         $("countDisplay").innerText = list.length;
 
-        // El torneo en curso bloquea el registro, salvo: (a) el organizador, o
-        // (b) cualquier jugador cuando el registro tardío está abierto.
+        // Barra de control del organizador (registro tardío, solo con torneo en curso)
         const inCourse = estadoCache.currentRoundNumber > 0;
         const lateOpen = !!estadoCache.lateRegistrationOpen;
-        const canRegister = !inCourse || isAdmin || lateOpen;
-        const locked = !canRegister;
-        $("registroForm").style.opacity = locked ? "0.5" : "1";
-        $("registroForm").style.pointerEvents = locked ? "none" : "auto";
-
-        // Barra de control del organizador (solo con torneo en curso)
         const lateBar = $("lateRegBar");
         if (lateBar) lateBar.style.display = (isAdmin && inCourse) ? "flex" : "none";
         const lateState = $("lateRegState");
@@ -1433,16 +1577,6 @@
         }
         const btnLate = $("btnToggleLateReg");
         if (btnLate) btnLate.textContent = lateOpen ? "Cerrar registro tardío" : "Abrir registro tardío";
-
-        const hint = $("registerHint");
-        if (hint) {
-            if (inCourse && isAdmin)
-                hint.innerHTML = `⚠️ <strong>Modo organizador:</strong> inscríbelo directamente (queda a tu nombre) o abre el registro tardío para que se inscriba desde su teléfono y controle su mesa. Entrará en la Ronda ${estadoCache.currentRoundNumber + 1} con ${estadoCache.currentRoundNumber} derrota(s).`;
-            else if (inCourse && lateOpen)
-                hint.innerHTML = `⏳ <strong>Registro tardío abierto:</strong> entrarás en la Ronda ${estadoCache.currentRoundNumber + 1} con ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.`;
-            else
-                hint.innerHTML = "El registro se bloquea automáticamente al iniciar la primera ronda. En tu teléfono quedas vinculado como el jugador que registres.";
-        }
 
         const note = $("myPlayerNote");
         if (myPlayerId && jugadoresCache[myPlayerId]) {
@@ -1901,7 +2035,7 @@
         renderHistorial();
         renderBirthdays();
         renderRoster();
-        updateIdentityUI();
+        renderRegistroState();
     }
 
     /* ============================================================
@@ -1964,48 +2098,6 @@
         } catch (e) { console.error(e); }
     }
 
-    /* ============================================================
-       IDENTIDAD DEL JUGADOR (vincular anónimo -> permanente)
-    ============================================================ */
-    // Vincula correo/contraseña al MISMO uid anónimo: conserva la propiedad
-    // del jugador ya registrado y permite recuperarlo en otros dispositivos.
-    async function linkIdentity() {
-        if (!currentUser) { toast("Conectando…"); return; }
-        const email = $("idEmail").value.trim();
-        const pass  = $("idPass").value;
-        if (!email || pass.length < 6) { toast("Correo válido y contraseña de 6+ caracteres"); return; }
-
-        if (!currentUser.isAnonymous) { toast("Ya tienes una identidad vinculada"); return; }
-
-        try {
-            const cred = EmailAuthProvider.credential(email, pass);
-            await linkWithCredential(currentUser, cred);
-            $("idPass").value = "";
-            toast("✅ Identidad vinculada. Úsala para entrar en otros teléfonos.");
-        } catch (e) {
-            console.error(e);
-            if (e.code === "auth/email-already-in-use" || e.code === "auth/credential-already-in-use") {
-                alert("Ese correo ya tiene cuenta. Usa \"Ya tengo cuenta · Iniciar sesión\" para recuperar tu jugador.\n\n" + e.message);
-            } else {
-                alert("❌ No se pudo vincular: " + e.message);
-            }
-        }
-    }
-
-    async function playerSignIn() {
-        const email = $("idEmail").value.trim();
-        const pass  = $("idPass").value;
-        if (!email || !pass) { toast("Ingresa correo y contraseña"); return; }
-        try {
-            await signInWithEmailAndPassword(auth, email, pass);
-            $("idPass").value = "";
-            toast("🔑 Sesión iniciada. Recuperando tu jugador…");
-        } catch (e) {
-            console.error(e);
-            alert("❌ No se pudo iniciar sesión: " + e.message);
-        }
-    }
-
     // Recuperación de contraseña (jugador u organizador)
     async function sendReset(inputId) {
         const email = $(inputId).value.trim();
@@ -2023,49 +2115,22 @@
         }
     }
 
-    async function playerLogout() {
-        try {
-            localStorage.removeItem(LS_PLAYER);
-            await signOut(auth); // volverá a sesión anónima
-            toast("Sesión cerrada");
-        } catch (e) { console.error(e); }
-    }
-
-    function updateIdentityUI() {
-        const anon = !currentUser || currentUser.isAnonymous;
-        $("identityAnon").style.display = anon ? "flex" : "none";
-        $("identityLogged").classList.toggle("hidden", anon);
-        if (!anon) {
-            const mine = myPlayerId && jugadoresCache[myPlayerId] ? jugadoresCache[myPlayerId].name : null;
-            $("identityWho").textContent = "🔒 Identidad: " + (currentUser.email || "") + (mine ? " · Jugador: " + mine : "");
-        }
-
-        // Botón "usar mis datos": visible si tengo perfil, aún no estoy inscrito
-        // en este torneo y el registro está abierto.
-        const alreadyIn = Object.values(jugadoresCache).some(p => currentUser && p.ownerUid === currentUser.uid);
-        const canPrefill = !!myPerfilCache && !alreadyIn && estadoCache.currentRoundNumber === 0;
-        $("btnPrefill").classList.toggle("hidden", !canPrefill);
-    }
-
     /* ============================================================
-       AUTOCOMPLETAR REGISTRO DESDE EL PERFIL GUARDADO
+       PERFIL GUARDADO (para editar / prellenar)
     ============================================================ */
     function subscribeMyPerfil() {
         if (myPerfilUnsub) { myPerfilUnsub(); myPerfilUnsub = null; }
         myPerfilCache = null;
-        prefilledOnce = false;
         if (!currentUser) return;
         myPerfilUnsub = onSnapshot(doc(PERFILES_COL, currentUser.uid), (snap) => {
             myPerfilCache = snap.exists() ? snap.data() : null;
-            maybeAutoPrefill();
-            updateIdentityUI();
+            renderRegistroState();
         }, (err) => console.warn("perfil listener:", err.message));
     }
 
     function prefillFromPerfil(force) {
         const p = myPerfilCache;
         if (!p) return;
-        if (estadoCache.currentRoundNumber > 0) return;          // registro cerrado
         // no sobrescribir lo que el usuario ya escribió, salvo que fuerce
         const setIf = (id, val) => { if (val && (force || !$(id).value)) $(id).value = val; };
         setIf("playerName", p.name);
@@ -2091,15 +2156,6 @@
             }
         });
         if (force) toast("🔄 Datos cargados desde tu perfil");
-    }
-
-    function maybeAutoPrefill() {
-        if (prefilledOnce) return;
-        const alreadyIn = Object.values(jugadoresCache).some(p => currentUser && p.ownerUid === currentUser.uid);
-        if (myPerfilCache && !alreadyIn && estadoCache.currentRoundNumber === 0 && !$("playerName").value) {
-            prefillFromPerfil(false);
-            prefilledOnce = true;
-        }
     }
 
     /* ============================================================
@@ -2169,7 +2225,15 @@
             btn.addEventListener("click", () => changeTab(btn.dataset.tab, btn));
         });
 
-        $("btnRegister").addEventListener("click", registerPlayer);
+        $("tabRegister").addEventListener("click", () => { editingProfile = false; showRegisterMode(false); });
+        $("tabLogin").addEventListener("click", () => { editingProfile = false; showLoginMode(); });
+        $("btnCreateAccount").addEventListener("click", registerAccount);
+        $("btnCancelEdit").addEventListener("click", cancelEdit);
+        $("btnAccountLogin").addEventListener("click", accountLogin);
+        $("btnAccountReset").addEventListener("click", () => sendReset("loginEmail"));
+        $("btnEditProfile").addEventListener("click", editProfile);
+        $("btnLogoutAccount").addEventListener("click", accountLogout);
+        $("btnJoinTournament").addEventListener("click", joinTournament);
         $("btnReset").addEventListener("click", resetTournament);
         $("btnExport").addEventListener("click", exportTournament);
         $("btnWipe").addEventListener("click", resetTotal);
@@ -2188,12 +2252,7 @@
         $("btnTimerPlus").addEventListener("click", timerAddFive);
         $("btnAdminLogin").addEventListener("click", adminLogin);
         $("btnAdminLogout").addEventListener("click", adminLogout);
-        $("btnLinkIdentity").addEventListener("click", linkIdentity);
-        $("btnPlayerSignIn").addEventListener("click", playerSignIn);
-        $("btnPlayerLogout").addEventListener("click", playerLogout);
-        $("btnPlayerReset").addEventListener("click", () => sendReset("idEmail"));
         $("btnAdminReset").addEventListener("click", () => sendReset("adminEmail"));
-        $("btnPrefill").addEventListener("click", () => prefillFromPerfil(true));
         // Sugerencias de Pokémon (datalist con los 1025 nombres)
         const dl = $("pokeDatalist");
         if (dl && window.POKE_NAMES) dl.innerHTML = window.POKE_NAMES.map(n => `<option value="${esc(n)}"></option>`).join("");
