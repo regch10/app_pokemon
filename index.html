@@ -242,8 +242,13 @@
                         <input type="text" id="playerNick" placeholder="Ej: RedKetchum">
                     </div>
                     <div class="form-group" style="margin:0;">
-                        <label for="playerBday">Fecha de cumpleaños:</label>
-                        <input type="date" id="playerBday">
+                        <label>Fecha de cumpleaños:</label>
+                        <div style="display:grid; grid-template-columns:1fr 1.5fr 1.1fr; gap:8px;">
+                            <select id="bdayDay"><option value="">Día</option></select>
+                            <select id="bdayMonth"><option value="">Mes</option></select>
+                            <select id="bdayYear"><option value="">Año</option></select>
+                        </div>
+                        <input type="hidden" id="playerBday">
                     </div>
                 </div>
                 <div class="form-group">
@@ -611,6 +616,25 @@
     }
     function pokeImg(name, size) { return pokeImgByNum(pokeNum(name), size); }
     function deckImg(deckName, size) { return pokeImgByNum(pokeNumInText(deckName), size); }
+
+    /* ===== Cumpleaños con 3 desplegables (fácil en móvil) → guarda YYYY-MM-DD ===== */
+    function syncBday() {
+        const d = $("bdayDay").value, m = $("bdayMonth").value, y = $("bdayYear").value;
+        $("playerBday").value = (d && m && y)
+            ? `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+            : "";
+    }
+    function setBdaySelects(value) {
+        const parts = (value || "").split("-");
+        if (parts.length === 3) {
+            $("bdayYear").value = String(parseInt(parts[0], 10));
+            $("bdayMonth").value = String(parseInt(parts[1], 10));
+            $("bdayDay").value = String(parseInt(parts[2], 10));
+        } else {
+            $("bdayYear").value = ""; $("bdayMonth").value = ""; $("bdayDay").value = "";
+        }
+        $("playerBday").value = value || "";
+    }
 
     // Recuadro grande con la imagen del Pokémon (para previews de favoritos).
     function pokeBox(name, size) {
@@ -2136,7 +2160,7 @@
         setIf("playerName", p.name);
         setIf("playerEmail", p.email);
         setIf("playerNick", p.nick);
-        setIf("playerBday", p.birthday);
+        if (p.birthday && (force || !$("playerBday").value)) setBdaySelects(p.birthday);
         setIf("favPokemon", p.favPokemon);
         const tops = p.topPokemons || [];
         ["top1","top2","top3","top4","top5"].forEach((id, i) => setIf(id, tops[i]));
@@ -2256,6 +2280,18 @@
         // Sugerencias de Pokémon (datalist con los 1025 nombres)
         const dl = $("pokeDatalist");
         if (dl && window.POKE_NAMES) dl.innerHTML = window.POKE_NAMES.map(n => `<option value="${esc(n)}"></option>`).join("");
+        // Desplegables de cumpleaños (día/mes/año)
+        const dSel = $("bdayDay"), mSel = $("bdayMonth"), ySel = $("bdayYear");
+        if (dSel && !dSel.dataset.built) {
+            let dOpts = ""; for (let d = 1; d <= 31; d++) dOpts += `<option value="${d}">${d}</option>`;
+            dSel.insertAdjacentHTML("beforeend", dOpts);
+            mSel.insertAdjacentHTML("beforeend", MONTHS.map((m, i) => `<option value="${i + 1}">${m}</option>`).join(""));
+            const yNow = new Date().getFullYear();
+            let yOpts = ""; for (let y = yNow; y >= 1940; y--) yOpts += `<option value="${y}">${y}</option>`;
+            ySel.insertAdjacentHTML("beforeend", yOpts);
+            dSel.dataset.built = "1";
+            [dSel, mSel, ySel].forEach(s => s.addEventListener("change", syncBday));
+        }
         // Preview grande del favorito + previews del top-5
         const favEl = $("favPokemon");
         if (favEl) favEl.addEventListener("input", () => {
