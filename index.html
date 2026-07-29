@@ -9,14 +9,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Paleta gaming: carbón + cian + magenta */
+            /* Fondo de página: gris papel (Colores_Pagina.jpeg) */
+            --page-bg: #757472;
+            --page-bg-deep: #6C6C6B;
+            /* Superficies oscuras (cards, inputs, paneles) */
             --bg-color: #1C1C1F;
-            --panel-bg: #252528;
+            --panel-bg: #232327;
             --panel-accent: #1C1C1F;
             --text-main: #F0F2F5;
-            --text-muted: #8A9BB0;
+            --text-muted: #9BA8B8;
             --cyan: #29ABE2;
+            --cyan-deep: #1196C0;
             --magenta: #EC008C;
+            --pink-soft: #FA81D0;
             /* Alias heredados (los usa HTML inline y JS): */
             --accent-yellow: #29ABE2;
             --accent-blue: #29ABE2;
@@ -26,11 +31,14 @@
             --success: #22C55E;
             --success-color: #22C55E;
             --success-bg: rgba(34, 197, 94, 0.12);
-            --border-color: rgba(41, 171, 226, 0.15);
+            --border-color: rgba(41, 171, 226, 0.18);
             --warning-color: #F59F00;
             --gradient-sig: linear-gradient(90deg, #29ABE2, #EC008C);
+            --gradient-soft: linear-gradient(90deg, #1196C0, #FA81D0);
             --font-display: 'Rajdhani', 'Inter', 'Segoe UI', sans-serif;
             --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            /* Esquinas recortadas estilo esports */
+            --cut: 14px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,64 +48,144 @@
         @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
         @keyframes glowBeat {
-            0%, 100% { box-shadow: 0 0 8px rgba(41, 171, 226, 0.35), 0 8px 32px rgba(0,0,0,0.4); }
-            50% { box-shadow: 0 0 22px rgba(41, 171, 226, 0.65), 0 0 40px rgba(236, 0, 140, 0.25), 0 8px 32px rgba(0,0,0,0.4); }
+            0%, 100% { filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45)) drop-shadow(0 0 8px rgba(41, 171, 226, 0.45)); }
+            50% { filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45)) drop-shadow(0 0 16px rgba(41, 171, 226, 0.75)) drop-shadow(0 0 26px rgba(236, 0, 140, 0.3)); }
         }
         @keyframes vsPulse {
-            0%, 100% { text-shadow: 0 0 15px rgba(236, 0, 140, 0.8); }
-            50% { text-shadow: 0 0 26px rgba(236, 0, 140, 1), 0 0 45px rgba(236, 0, 140, 0.5); }
+            0%, 100% { box-shadow: 0 0 16px rgba(236, 0, 140, 0.55); }
+            50% { box-shadow: 0 0 30px rgba(236, 0, 140, 0.95), 0 0 48px rgba(250, 129, 208, 0.4); }
         }
         @keyframes borderGlow {
             0%, 100% { border-color: rgba(41, 171, 226, 0.7); box-shadow: 0 0 12px rgba(41, 171, 226, 0.3); }
             50% { border-color: rgba(236, 0, 140, 0.7); box-shadow: 0 0 18px rgba(236, 0, 140, 0.35); }
         }
 
-        html { scrollbar-color: #29ABE2 #1C1C1F; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #1C1C1F; }
-        ::-webkit-scrollbar-thumb { background: #29ABE2; border-radius: 3px; }
-        ::selection { background: rgba(41, 171, 226, 0.35); color: #fff; }
+        html { scrollbar-color: #29ABE2 #4b4b4d; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #5c5c5e; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #29ABE2, #1196C0); border-radius: 4px; }
+        ::selection { background: rgba(41, 171, 226, 0.4); color: #fff; }
 
+        /* ===== Fondo: papel gris con textura + triángulos de la foto ===== */
         body {
             font-family: var(--font-body);
-            background-color: var(--bg-color);
+            background-color: var(--page-bg);
             background-image:
-                radial-gradient(ellipse 80% 50% at 15% -10%, rgba(41, 171, 226, 0.07), transparent),
-                radial-gradient(ellipse 60% 40% at 90% 0%, rgba(236, 0, 140, 0.05), transparent);
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E"),
+                linear-gradient(160deg, #7A7977 0%, #757472 45%, #6C6C6B 100%);
             background-attachment: fixed;
             color: var(--text-main);
-            padding: 20px; line-height: 1.5;
+            padding: 18px clamp(12px, 2vw, 36px) 40px;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+        /* Triángulos de papel (guiño a Colores_Pagina.jpeg) */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            bottom: 0; z-index: 0;
+            pointer-events: none;
+            width: 42vw; max-width: 560px;
+            height: 34vh; max-height: 380px;
+        }
+        body::before {
+            left: 0;
+            background: linear-gradient(135deg, rgba(17, 150, 192, 0.35), rgba(17, 150, 192, 0.12));
+            clip-path: polygon(0 100%, 0 22%, 78% 100%);
+        }
+        body::after {
+            right: 0;
+            background: linear-gradient(225deg, rgba(250, 129, 208, 0.32), rgba(236, 0, 140, 0.10));
+            clip-path: polygon(100% 100%, 100% 12%, 18% 100%);
         }
 
-        .container { max-width: 1100px; margin: 0 auto; }
+        /* ===== Layout a ancho completo ===== */
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            position: relative; z-index: 1;
+        }
+
+        /* ===== Tipografía de secciones (estilo Bigamer) ===== */
+        .eyebrow {
+            font-family: var(--font-display);
+            font-size: 12px; font-weight: 700;
+            letter-spacing: 3px; text-transform: uppercase;
+            color: var(--magenta);
+            margin-bottom: 6px;
+        }
+        .big-title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: clamp(26px, 3.2vw, 40px);
+            text-transform: uppercase; letter-spacing: 1px;
+            color: #fff; line-height: 1.08;
+        }
+        .big-title span {
+            background: var(--gradient-sig);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 0 16px rgba(41, 171, 226, 0.45));
+        }
+        .hero-sub { color: var(--text-muted); font-size: 14px; margin-top: 8px; max-width: 680px; }
+
+        /* ===== Hero banner (Registro) — rejilla neón estilo esports ===== */
+        .hero-banner {
+            position: relative; overflow: hidden;
+            padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 34px);
+            margin-bottom: 26px;
+            clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+            border: 1px solid rgba(41, 171, 226, 0.25);
+            background:
+                radial-gradient(ellipse 45% 90% at 88% 15%, rgba(236, 0, 140, 0.20), transparent),
+                radial-gradient(ellipse 50% 90% at 8% 10%, rgba(41, 171, 226, 0.20), transparent),
+                linear-gradient(rgba(41, 171, 226, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(41, 171, 226, 0.06) 1px, transparent 1px),
+                #161619;
+            background-size: auto, auto, 32px 32px, 32px 32px;
+        }
+        .hero-banner::after {
+            content: '';
+            position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+            background: var(--gradient-sig);
+            background-size: 200% 100%;
+            animation: gradientShift 4s ease infinite;
+        }
 
         /* ===== Header ===== */
         header {
             position: relative;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 18px 20px 22px;
-            background: linear-gradient(135deg, #252528 0%, #1C1C1F 100%);
-            border-radius: 12px 12px 0 0;
-            margin-bottom: 24px; flex-wrap: wrap; gap: 15px;
+            padding: 20px 26px 24px;
+            background:
+                radial-gradient(ellipse 60% 120% at 8% 0%, rgba(41, 171, 226, 0.12), transparent),
+                radial-gradient(ellipse 50% 120% at 95% 0%, rgba(236, 0, 140, 0.10), transparent),
+                linear-gradient(135deg, #232327 0%, #1C1C1F 100%);
+            border-radius: 14px;
+            clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+            margin-bottom: 18px; flex-wrap: wrap; gap: 15px;
         }
         header::after {
             content: '';
-            position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+            position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
             background: var(--gradient-sig);
             background-size: 200% 100%;
             animation: gradientShift 4s ease infinite;
-            border-radius: 2px;
         }
 
         .logo-section h1 {
             font-family: var(--font-display);
-            font-size: 30px; font-weight: 700; letter-spacing: 0.5px;
+            font-size: clamp(24px, 2.4vw, 32px); font-weight: 700; letter-spacing: 0.5px;
             color: var(--text-main);
             text-transform: uppercase;
         }
         .logo-section h1 .title-accent {
-            color: var(--cyan);
-            text-shadow: 0 0 20px rgba(41, 171, 226, 0.5);
+            background: linear-gradient(90deg, #29ABE2, #7CCFF5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 0 14px rgba(41, 171, 226, 0.55));
         }
         .logo-section p { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
         .logo-section p .sub-pill {
@@ -118,11 +206,11 @@
             color: #fff;
             box-shadow: 0 0 12px rgba(41, 171, 226, 0.35);
         }
-        .role-player { background-color: var(--panel-accent); color: var(--text-muted); border: 1px solid rgba(138, 155, 176, 0.3); }
+        .role-player { background-color: var(--panel-accent); color: var(--text-muted); border: 1px solid rgba(155, 168, 184, 0.3); }
 
         .conn-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
         .conn-ok {
-            background: var(--success-bg); color: var(--success-color);
+            background: rgba(34, 197, 94, 0.15); color: #4ADE80;
             border: 1px solid var(--success-color);
             box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
             animation: pulse 2s ease-in-out infinite;
@@ -145,7 +233,7 @@
         .btn-primary { background-color: var(--cyan); color: #10222c; }
         .btn-primary:hover:not(:disabled) {
             background-color: #3FBCF0; transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(41, 171, 226, 0.4);
+            box-shadow: 0 4px 15px rgba(41, 171, 226, 0.45);
         }
         .btn-accent {
             background: var(--gradient-sig);
@@ -155,33 +243,33 @@
         }
         .btn-accent:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(236, 0, 140, 0.35), 0 4px 15px rgba(41, 171, 226, 0.25);
+            box-shadow: 0 4px 15px rgba(236, 0, 140, 0.4), 0 4px 15px rgba(41, 171, 226, 0.3);
         }
         .btn-danger { background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
         .btn-danger:hover:not(:disabled) {
             background-color: var(--danger); color: white; transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.45);
         }
-        .btn-secondary { background-color: var(--panel-accent); color: var(--text-main); border: 1px solid rgba(138, 155, 176, 0.25); }
+        .btn-secondary { background-color: #2A2A2F; color: var(--text-main); border: 1px solid rgba(155, 168, 184, 0.25); }
         .btn-secondary:hover:not(:disabled) {
             border-color: var(--cyan); color: #fff; transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(41, 171, 226, 0.2);
+            box-shadow: 0 4px 15px rgba(41, 171, 226, 0.25);
         }
         .btn-success { background-color: var(--success-color); color: #06180c; border: none; }
         .btn-success:hover:not(:disabled) {
             background-color: #34D96C; transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.45);
         }
 
         /* ===== Barra de login del organizador ===== */
         .admin-bar {
-            background: rgba(37, 37, 40, 0.85);
+            background: rgba(28, 28, 31, 0.92);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(41, 171, 226, 0.2);
-            border-radius: 12px; padding: 15px; margin-bottom: 20px;
+            border: 1px solid rgba(41, 171, 226, 0.25);
+            border-radius: 12px; padding: 15px; margin-bottom: 16px;
             display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
         }
         .admin-bar input {
             flex: 1; min-width: 160px; padding: 10px 12px;
@@ -189,55 +277,59 @@
             border-radius: 8px; color: #fff; outline: none;
             transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
-        .admin-bar input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(41, 171, 226, 0.15); }
+        .admin-bar input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(41, 171, 226, 0.18); }
         .admin-bar .hint { font-size: 12px; color: var(--text-muted); width: 100%; }
         .uid-box { font-family: monospace; font-size: 12px; background: var(--bg-color); padding: 4px 8px; border-radius: 4px; color: var(--cyan); border: 1px dashed var(--border-color); user-select: all; }
 
-        /* ===== Tabs ===== */
+        /* ===== Tabs (sticky, glass sobre el gris) ===== */
         .tabs {
-            display: flex; gap: 5px; margin-bottom: 20px;
-            background: #1C1C1F;
-            border-bottom: 1px solid rgba(41, 171, 226, 0.12);
-            border-radius: 10px 10px 0 0;
-            overflow-x: auto; padding: 4px 4px 0;
+            position: sticky; top: 0; z-index: 60;
+            display: flex; gap: 5px; margin-bottom: 16px;
+            background: rgba(28, 28, 31, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(41, 171, 226, 0.15);
+            border-radius: 12px;
+            overflow-x: auto; padding: 5px 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.30);
         }
         .tab {
             position: relative;
-            padding: 12px 18px; background: none; color: var(--text-muted);
-            border: none; border-radius: 8px 8px 0 0; font-size: 15px; white-space: nowrap;
-            font-family: var(--font-display); font-weight: 600; letter-spacing: 0.3px;
+            padding: 11px 18px; background: none; color: var(--text-muted);
+            border: none; border-radius: 8px; font-size: 15px; white-space: nowrap;
+            font-family: var(--font-display); font-weight: 600; letter-spacing: 0.4px;
+            text-transform: uppercase;
         }
-        .tab:hover { color: var(--text-main); background-color: rgba(41, 171, 226, 0.05); transform: none; }
+        .tab:hover { color: var(--text-main); background-color: rgba(41, 171, 226, 0.07); transform: none; }
         .tab.active {
             color: #fff;
-            background: rgba(41, 171, 226, 0.08);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 4px 15px rgba(41, 171, 226, 0.3);
+            background: rgba(41, 171, 226, 0.10);
+            box-shadow: 0 4px 15px rgba(41, 171, 226, 0.30);
             font-weight: 700;
         }
         .tab.active::after {
             content: '';
-            position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+            position: absolute; left: 10px; right: 10px; bottom: 2px; height: 3px;
             background: var(--gradient-sig);
             background-size: 200% 100%;
             animation: gradientShift 4s ease infinite;
-            border-radius: 3px 3px 0 0;
+            border-radius: 3px;
         }
 
         /* ===== Panels ===== */
         .panel {
-            background: rgba(37, 37, 40, 0.95);
-            padding: 25px; border-radius: 12px;
-            border: 1px solid rgba(41, 171, 226, 0.12);
+            background: linear-gradient(180deg, #242428 0%, #202024 100%);
+            padding: clamp(16px, 2vw, 28px);
+            border-radius: 14px;
+            border: 1px solid rgba(41, 171, 226, 0.16);
             display: none;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
         }
         .panel.active { display: block; animation: fadeInUp 0.3s ease-out; }
 
         h2 {
             margin-bottom: 20px; font-size: 22px;
-            font-family: var(--font-display); font-weight: 700; letter-spacing: 0.5px;
+            font-family: var(--font-display); font-weight: 700; letter-spacing: 0.6px;
             text-transform: uppercase;
             border-left: 4px solid;
             border-image: linear-gradient(180deg, #29ABE2, #EC008C) 1;
@@ -255,10 +347,10 @@
             border-radius: 8px; color: white; font-size: 14px; outline: none;
             transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
-        ::placeholder { color: rgba(138, 155, 176, 0.55); }
+        ::placeholder { color: rgba(155, 168, 184, 0.55); }
         .report-form select.mini-select { width: auto; min-width: 88px; padding: 5px 6px; font-size: 12px; margin: 2px; display: inline-block; }
         .report-form input[type="number"] { padding: 6px; }
-        input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(41, 171, 226, 0.15); }
+        input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(41, 171, 226, 0.18); }
 
         .deck-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px; }
         .fav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
@@ -268,21 +360,20 @@
             width: 100%; border-collapse: separate; border-spacing: 0;
             margin-top: 15px; font-size: 14px;
             border-radius: 10px; overflow: hidden;
-            border: 1px solid rgba(41, 171, 226, 0.12);
+            border: 1px solid rgba(41, 171, 226, 0.14);
         }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(41, 171, 226, 0.08); }
         tr:last-child td { border-bottom: none; }
         th {
-            background-color: #1C1C1F; color: var(--cyan);
+            background-color: #18181B; color: var(--cyan);
             font-family: var(--font-display); font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.5px; font-size: 12px;
+            text-transform: uppercase; letter-spacing: 0.6px; font-size: 12px;
         }
         tbody tr { transition: background-color 0.2s ease; }
-        tbody tr:nth-child(even) td { background-color: rgba(28, 28, 31, 0.45); }
-        tbody tr:hover td { background-color: rgba(41, 171, 226, 0.07); }
+        tbody tr:nth-child(even) td { background-color: rgba(24, 24, 27, 0.5); }
+        tbody tr:hover td { background-color: rgba(41, 171, 226, 0.08); }
         tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--cyan); }
 
-        /* Filas con entrada escalonada */
         .panel.active tbody tr { animation: fadeInUp 0.3s ease-out both; }
         .panel.active tbody tr:nth-child(1)  { animation-delay: 0.05s; }
         .panel.active tbody tr:nth-child(2)  { animation-delay: 0.10s; }
@@ -296,9 +387,27 @@
         .panel.active tbody tr:nth-child(10) { animation-delay: 0.50s; }
         .panel.active tbody tr:nth-child(n+11) { animation-delay: 0.55s; }
 
-        /* Posición #1 en standings */
+        /* ===== Standings: podio con medallas ===== */
         #posiciones tbody tr:first-child td {
-            background: linear-gradient(90deg, rgba(41, 171, 226, 0.10), rgba(236, 0, 140, 0.06));
+            background: linear-gradient(90deg, rgba(41, 171, 226, 0.12), rgba(236, 0, 140, 0.07));
+        }
+        #posiciones tbody tr:nth-child(-n+3) td:first-child strong {
+            display: inline-flex; width: 30px; height: 30px;
+            align-items: center; justify-content: center;
+            border-radius: 50%;
+            font-family: var(--font-display); font-size: 14px;
+        }
+        #posiciones tbody tr:nth-child(1) td:first-child strong {
+            background: linear-gradient(135deg, #FFE082, #C8971B); color: #1C1C1F;
+            box-shadow: 0 0 12px rgba(255, 215, 94, 0.55);
+        }
+        #posiciones tbody tr:nth-child(2) td:first-child strong {
+            background: linear-gradient(135deg, #ECECEC, #9E9E9E); color: #1C1C1F;
+            box-shadow: 0 0 10px rgba(230, 230, 230, 0.35);
+        }
+        #posiciones tbody tr:nth-child(3) td:first-child strong {
+            background: linear-gradient(135deg, #E8A05C, #8C5A2B); color: #1C1C1F;
+            box-shadow: 0 0 10px rgba(232, 160, 92, 0.4);
         }
 
         .buchholz-col { color: #A5B4FC; font-weight: bold; }
@@ -313,56 +422,62 @@
         .tier-normal { background-color: #29ABE2; box-shadow: 0 0 8px rgba(41, 171, 226, 0.5); }
         .tier-fun { background-color: #EC008C; box-shadow: 0 0 8px rgba(236, 0, 140, 0.5); }
 
-        /* ===== Match Cards ===== */
+        /* ===== Match Cards (estilo Bigamer: franja meta + VS circular) ===== */
         .match-card {
             position: relative;
-            background-color: #252528;
-            border: 1px solid rgba(41, 171, 226, 0.18);
-            border-radius: 12px; padding: 20px; margin-bottom: 20px;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(180deg, #26262B 0%, #1F1F23 100%);
+            border: 1px solid rgba(41, 171, 226, 0.22);
+            clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+            padding: 20px; margin-bottom: 20px;
+            transition: transform 0.25s ease, filter 0.25s ease;
+            filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
         }
         .match-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 0 18px rgba(41, 171, 226, 0.15);
-        }
-        .match-card::before {
-            content: '';
-            position: absolute; top: 0; left: 0; right: 0; height: 2px;
-            background: var(--gradient-sig);
-            border-radius: 12px 12px 0 0;
-            opacity: 0.6;
+            filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 12px rgba(41, 171, 226, 0.25));
         }
         .match-card.my-table {
-            border: 2px solid rgba(41, 171, 226, 0.7);
+            border: 2px solid rgba(41, 171, 226, 0.75);
             animation: glowBeat 2.4s ease-in-out infinite;
         }
 
-        .match-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(41, 171, 226, 0.12); margin-bottom: 15px; }
-        .table-number {
-            background: rgba(41, 171, 226, 0.12); padding: 4px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 700; color: var(--cyan);
-            border: 1px solid rgba(41, 171, 226, 0.3);
-            font-family: var(--font-display); letter-spacing: 0.5px;
+        /* Franja superior tipo "2 GROUP 32 PLAYERS | PRIZE POOL" de Bigamer */
+        .match-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin: -20px -20px 16px; padding: 10px 20px;
+            background: var(--gradient-sig);
+            background-size: 200% 100%;
+            animation: gradientShift 6s ease infinite;
+            border-bottom: none;
         }
-        .match-status { font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 20px; }
-        .status-pending { background-color: rgba(245, 159, 0, 0.15); color: var(--warning-color); border: 1px solid var(--warning-color); }
-        .status-done { background-color: var(--success-bg); color: var(--success-color); border: 1px solid var(--success-color); }
+        .table-number {
+            background: rgba(0, 0, 0, 0.32); padding: 4px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            font-family: var(--font-display); letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .match-status {
+            font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 20px;
+            background: rgba(0, 0, 0, 0.38); border: 1px solid rgba(255, 255, 255, 0.2);
+            font-family: var(--font-display); letter-spacing: 0.6px; text-transform: uppercase;
+        }
+        .status-pending { color: #FFD48A; }
+        .status-done { color: #7CF2A4; }
 
-        /* Layout VS */
-        .vs-container { position: relative; display: flex; justify-content: space-between; align-items: stretch; gap: 44px; margin-bottom: 15px; flex-wrap: wrap; }
+        /* Layout VS — círculo magenta central como Bigamer */
+        .vs-container { position: relative; display: flex; justify-content: space-between; align-items: stretch; gap: 46px; margin-bottom: 15px; flex-wrap: wrap; }
         .vs-container::before {
             content: 'VS';
             position: absolute; left: 50%; top: 50%;
             transform: translate(-50%, -50%);
             z-index: 2; pointer-events: none;
-            font-family: var(--font-display); font-size: 24px; font-weight: 700;
-            color: var(--magenta);
-            background: #1C1C1F;
-            border: 1px solid rgba(236, 0, 140, 0.4);
-            border-radius: 10px;
-            padding: 4px 10px;
-            text-shadow: 0 0 15px rgba(236, 0, 140, 0.8);
+            display: flex; align-items: center; justify-content: center;
+            width: 54px; height: 54px; border-radius: 50%;
+            font-family: var(--font-display); font-size: 19px; font-weight: 700; letter-spacing: 1px;
+            color: #fff;
+            background: radial-gradient(circle at 30% 30%, #FA81D0, #EC008C 60%);
+            border: 3px solid #1C1C1F;
             animation: vsPulse 2s ease-in-out infinite;
         }
         .player-column {
@@ -373,25 +488,30 @@
         }
         .player-column.p1-side {
             border-left-color: var(--cyan);
-            background: linear-gradient(135deg, rgba(41, 171, 226, 0.07), rgba(28, 28, 31, 1) 55%);
+            background: linear-gradient(135deg, rgba(41, 171, 226, 0.09), rgba(24, 24, 27, 1) 55%);
         }
         .player-column.p2-side {
             border-left: none; border-right: 4px solid var(--magenta);
-            background: linear-gradient(225deg, rgba(236, 0, 140, 0.07), rgba(28, 28, 31, 1) 55%);
+            background: linear-gradient(225deg, rgba(236, 0, 140, 0.09), rgba(24, 24, 27, 1) 55%);
         }
 
-        .player-name { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: white; font-family: var(--font-display); letter-spacing: 0.3px; }
+        .player-name {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 17px; font-weight: bold; margin-bottom: 10px; color: white;
+            font-family: var(--font-display); letter-spacing: 0.4px; text-transform: uppercase;
+        }
+        .p2-side .player-name { flex-direction: row-reverse; text-align: right; }
         .deck-order-list { list-style: none; }
-        .deck-order-item { font-size: 13px; padding: 6px 0; border-bottom: 1px dashed rgba(138, 155, 176, 0.25); display: flex; justify-content: space-between; color: var(--text-muted); }
+        .deck-order-item { font-size: 13px; padding: 6px 0; border-bottom: 1px dashed rgba(155, 168, 184, 0.25); display: flex; justify-content: space-between; color: var(--text-muted); }
         .deck-order-item:last-child { border-bottom: none; }
         .deck-order-item strong { color: var(--text-main); }
 
-        .match-actions { display: flex; gap: 10px; justify-content: center; border-top: 1px solid rgba(41, 171, 226, 0.12); padding-top: 15px; flex-wrap: wrap; }
+        .match-actions { display: flex; gap: 10px; justify-content: center; border-top: 1px solid rgba(41, 171, 226, 0.14); padding-top: 15px; flex-wrap: wrap; }
         .locked-note { font-size: 12px; color: var(--text-muted); text-align: center; width: 100%; }
 
         /* ===== BYE Card ===== */
         .bye-card {
-            background: linear-gradient(135deg, rgba(41, 171, 226, 0.12), rgba(236, 0, 140, 0.12)), #1C1C1F;
+            background: linear-gradient(135deg, rgba(41, 171, 226, 0.14), rgba(236, 0, 140, 0.14)), #1C1C1F;
             border: 1px solid rgba(41, 171, 226, 0.5);
             animation: borderGlow 3s ease-in-out infinite;
             padding: 15px; border-radius: 12px; text-align: center;
@@ -399,10 +519,153 @@
         }
         .bye-card strong { color: var(--cyan); }
 
+        /* ===== KPI cards (Historial) ===== */
+        .kpi-card {
+            position: relative; overflow: hidden;
+            background: #1B1B1F;
+            border: 1px solid rgba(41, 171, 226, 0.18);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            padding: 16px 12px; text-align: center;
+            transition: transform 0.25s ease;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: var(--gradient-sig);
+        }
+        .kpi-card:hover { transform: translateY(-2px); }
+        .kpi-value {
+            font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1.1;
+            background: linear-gradient(90deg, #29ABE2, #FA81D0);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+        /* ===== Chart cards (Historial) ===== */
+        .chart-card {
+            position: relative; overflow: hidden;
+            background: #1B1B1F;
+            border: 1px solid rgba(41, 171, 226, 0.16);
+            border-radius: 12px; padding: 16px;
+        }
+        .chart-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: var(--gradient-sig); opacity: 0.7;
+        }
+        .chart-card h3 { margin-top: 0; }
+
+        /* ===== Roster de jugadores (cards estilo team-card Bigamer) ===== */
+        .roster-card {
+            position: relative; overflow: hidden;
+            background: linear-gradient(180deg, #26262B 0%, #1E1E22 100%);
+            border: 1px solid rgba(41, 171, 226, 0.2);
+            clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+            padding: 0 16px 16px;
+            transition: transform 0.25s ease, filter 0.25s ease;
+            filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.4));
+        }
+        .roster-card:hover {
+            transform: translateY(-4px);
+            filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px rgba(41, 171, 226, 0.3));
+        }
+        /* Franja diagonal con trama de puntos (como las team cards de Bigamer) */
+        .roster-band {
+            height: 64px; margin: 0 -16px;
+            background-image:
+                radial-gradient(rgba(255, 255, 255, 0.30) 1px, transparent 1.5px),
+                linear-gradient(120deg, rgba(41, 171, 226, 0.85) 0%, rgba(17, 150, 192, 0.85) 46%, rgba(236, 0, 140, 0.85) 46.1%, rgba(250, 129, 208, 0.8) 100%);
+            background-size: 9px 9px, auto;
+            clip-path: polygon(0 0, 100% 0, 100% 68%, 0 100%);
+        }
+        .roster-head { display: flex; gap: 12px; align-items: flex-end; margin: -38px 0 12px; position: relative; z-index: 1; }
+        .roster-head img, .roster-head > div:first-child { flex-shrink: 0; }
+        .roster-name { font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: 0.4px; text-transform: uppercase; color: #fff; }
+        .roster-nick { color: var(--cyan); font-size: 13px; font-weight: 600; }
+        .roster-mail { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
+        .roster-fav {
+            display: flex; gap: 12px; align-items: center; margin-bottom: 12px;
+            background: rgba(41, 171, 226, 0.05);
+            border: 1px dashed rgba(41, 171, 226, 0.3);
+            border-radius: 10px; padding: 8px 10px;
+        }
+        .roster-label {
+            font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 1.6px; margin-bottom: 5px; font-weight: 700;
+            font-family: var(--font-display);
+        }
+        .roster-team { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+
+        /* ===== Calendario de cumpleaños ===== */
+        .cal-hero { margin-bottom: 22px; }
+        .cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 16px; }
+        .cal-month {
+            position: relative; overflow: hidden;
+            background: linear-gradient(180deg, #232327 0%, #1D1D21 100%);
+            border: 1px solid rgba(41, 171, 226, 0.15);
+            border-radius: 12px; padding: 14px;
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .cal-month:hover {
+            transform: translateY(-3px);
+            border-color: rgba(41, 171, 226, 0.45);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+        }
+        .cal-month.cur {
+            border: 1px solid transparent;
+            background:
+                linear-gradient(180deg, #202024, #1C1C20) padding-box,
+                linear-gradient(90deg, #29ABE2, #EC008C) border-box;
+            box-shadow: 0 0 20px rgba(41, 171, 226, 0.25), 0 0 30px rgba(236, 0, 140, 0.12);
+        }
+        .cal-month-head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; padding-bottom: 8px;
+            border-bottom: 1px solid rgba(41, 171, 226, 0.12);
+        }
+        .cal-month-name {
+            font-family: var(--font-display); font-weight: 700; font-size: 16px;
+            text-transform: uppercase; letter-spacing: 1.2px; color: #fff;
+        }
+        .cal-month-num {
+            font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1;
+            color: rgba(255, 255, 255, 0.07);
+        }
+        .cal-now {
+            font-family: var(--font-display); font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+            color: #fff; text-transform: uppercase;
+            background: var(--gradient-sig);
+            background-size: 200% 100%;
+            animation: gradientShift 4s ease infinite;
+            padding: 3px 9px; border-radius: 12px;
+        }
+        .cal-entry {
+            display: flex; align-items: center; gap: 10px;
+            padding: 7px 0; font-size: 13px;
+            border-bottom: 1px dashed rgba(155, 168, 184, 0.18);
+        }
+        .cal-entry:last-child { border-bottom: none; }
+        .cal-day {
+            flex-shrink: 0; width: 30px; height: 30px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(41, 171, 226, 0.14); color: var(--cyan);
+            font-family: var(--font-display); font-weight: 700; font-size: 14px;
+            border: 1px solid rgba(41, 171, 226, 0.35); border-radius: 8px;
+        }
+        .cal-month.cur .cal-day {
+            background: rgba(236, 0, 140, 0.16); color: var(--pink-soft);
+            border-color: rgba(236, 0, 140, 0.4);
+        }
+        .cal-who { flex: 1; min-width: 0; }
+        .cal-who strong { color: var(--text-main); }
+        .cal-nick { display: block; color: var(--cyan); font-size: 11px; }
+        .cal-fav { flex-shrink: 0; display: inline-flex; align-items: center; }
+        .cal-empty { font-size: 12px; color: rgba(155, 168, 184, 0.45); margin: 0; font-style: italic; }
+
         /* ===== Alertas ===== */
         .alert-box { padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; text-align: center; display: none; }
         .alert-warning { background-color: rgba(245, 159, 0, 0.12); border: 1px solid var(--warning-color); color: var(--warning-color); }
-        .alert-success { background-color: var(--success-bg); border: 1px solid var(--success-color); color: var(--success-color); }
+        .alert-success { background-color: var(--success-bg); border: 1px solid var(--success-color); color: #4ADE80; }
 
         /* ===== Reglas ===== */
         .rules-content { color: var(--text-muted); }
@@ -414,10 +677,10 @@
         .toast {
             position: fixed; bottom: 20px; left: 50%;
             transform: translateX(-50%) translateY(10px);
-            background: rgba(28, 28, 31, 0.9);
+            background: rgba(24, 24, 27, 0.92);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(41, 171, 226, 0.4);
+            border: 1px solid rgba(41, 171, 226, 0.45);
             color: var(--text-main); padding: 12px 20px; border-radius: 10px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(41, 171, 226, 0.15);
             z-index: 999; opacity: 0;
@@ -431,12 +694,13 @@
 
         /* ===== Responsive ===== */
         @media (max-width: 640px) {
-            body { padding: 12px; }
-            .logo-section h1 { font-size: 24px; }
-            .panel { padding: 16px; }
-            .vs-container { gap: 34px; }
-            .vs-container::before { font-size: 18px; padding: 3px 8px; }
+            body { padding: 10px 10px 30px; }
+            .logo-section h1 { font-size: 22px; }
+            .vs-container { gap: 36px; }
+            .vs-container::before { width: 44px; height: 44px; font-size: 15px; }
             th, td { padding: 9px 10px; font-size: 13px; }
+            body::before, body::after { opacity: 0.5; }
+            .hero-banner { padding: 20px 16px; }
         }
 
         /* ===== Reduced motion ===== */
@@ -499,6 +763,11 @@
 
     <!-- PESTAÑA: REGISTRO -->
     <div id="registro" class="panel active">
+        <div class="hero-banner">
+            <div class="eyebrow">⚡ Liga Pokémon TCG · Suizo oficial · Buchholz</div>
+            <div class="big-title">ENTRA A LA <span>ARENA</span></div>
+            <p class="hero-sub">Registra tus 3 decks, domina tus emparejamientos y conquista la tabla de posiciones.</p>
+        </div>
         <h2>Inscripción de Competidores</h2>
         <div id="myPlayerNote" class="alert-box alert-success" style="display:none;"></div>
 
@@ -735,15 +1004,15 @@
         <div id="statsKpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:25px;"></div>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; margin-bottom:30px;">
-            <div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:15px;">
+            <div class="chart-card">
                 <h3 style="margin-top:0;">Puntos totales por jugador</h3>
                 <div style="position:relative; height:240px;"><canvas id="chartPoints"></canvas></div>
             </div>
-            <div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:15px;">
+            <div class="chart-card">
                 <h3 style="margin-top:0;">Decks más usados</h3>
                 <div style="position:relative; height:240px;"><canvas id="chartDecks"></canvas></div>
             </div>
-            <div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:15px;">
+            <div class="chart-card">
                 <h3 style="margin-top:0;">Resultados globales (V/E/D)</h3>
                 <div style="position:relative; height:240px;"><canvas id="chartWLD"></canvas></div>
             </div>
@@ -784,11 +1053,12 @@
 
     <!-- PESTAÑA: CALENDARIO -->
     <div id="calendario" class="panel">
-        <h2>🎂 Calendario de Cumpleaños</h2>
-        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">
-            Cumpleañeros de todo el año (jugadores con fecha de cumpleaños registrada). El mes en curso se resalta en amarillo.
-        </p>
-        <div id="birthdayGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;"></div>
+        <div class="cal-hero">
+            <div class="eyebrow">🎂 Cumpleaños del club</div>
+            <div class="big-title">CALENDARIO <span>DE ENTRENADORES</span></div>
+            <p class="hero-sub">Los cumpleañeros de todo el año. El mes en curso se enciende en cian y magenta.</p>
+        </div>
+        <div id="birthdayGrid" class="cal-grid"></div>
     </div>
 
     <!-- PESTAÑA: REGLAS -->
@@ -1869,13 +2139,17 @@
             const list = byMonth[m].sort((a, b) => a.day - b.day);
             total += list.length;
             const isCur = m === curMonth;
-            html += `<div style="background:var(--panel-accent); border:1px solid ${isCur ? 'var(--accent-yellow)' : 'var(--border-color)'}; border-radius:8px; padding:12px;">
-                <h3 style="margin:0 0 8px; color:${isCur ? 'var(--accent-yellow)' : 'var(--text-main)'}; font-size:15px;">${MONTHS[m]}${isCur ? ' • este mes' : ''}</h3>`;
+            html += `<div class="cal-month${isCur ? ' cur' : ''}">
+                <div class="cal-month-head">
+                    <span class="cal-month-name">${MONTHS[m]}</span>
+                    ${isCur ? '<span class="cal-now">● Este mes</span>' : `<span class="cal-month-num">${String(m + 1).padStart(2, "0")}</span>`}
+                </div>`;
             html += list.length
-                ? list.map(e => `<div style="display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px dashed var(--border-color); font-size:13px;">
-                    <span>🎂 <strong>${e.day}</strong> · ${e.name}${e.nick ? ` <span style="color:var(--text-muted)">(${e.nick})</span>` : ''}</span>
-                    <span style="color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">${e.fav ? pokeImg(e.fav, 22) : ''}${e.fav || ''}</span></div>`).join("")
-                : `<p style="font-size:12px; color:var(--text-muted); margin:0;">—</p>`;
+                ? list.map(e => `<div class="cal-entry">
+                    <span class="cal-day">${e.day}</span>
+                    <span class="cal-who"><strong>${e.name}</strong>${e.nick ? `<span class="cal-nick">@${e.nick}</span>` : ''}</span>
+                    <span class="cal-fav" title="${e.fav || ''}">${e.fav ? pokeImg(e.fav, 26) : '🎂'}</span></div>`).join("")
+                : `<p class="cal-empty">Sin cumpleaños</p>`;
             html += `</div>`;
         }
         if (total === 0) {
@@ -1899,25 +2173,26 @@
                 ? tops.map(t => `<span style="display:inline-flex;flex-direction:column;align-items:center;width:46px;">${pokeImg(t, 34)}<span style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46px;">${esc(t)}</span></span>`).join("")
                 : '<span style="font-size:12px;color:var(--text-muted);">—</span>';
             const decksHtml = (p.decks || []).map(d => `<div style="font-size:12px;display:flex;align-items:center;gap:6px;padding:2px 0;">${deckImg(d.name, 18)} <span>${esc(d.name)}</span> <span class="tier-badge ${getTierClass(d.tier)}">${d.tier}</span></div>`).join("");
-            return `<div style="background:var(--panel-accent);border:1px solid var(--border-color);border-radius:10px;padding:16px;">
-                <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
-                    ${avatarImg(p.avatar, 64)}
+            return `<div class="roster-card">
+                <div class="roster-band"></div>
+                <div class="roster-head">
+                    ${avatarImg(p.avatar, 68)}
                     <div style="min-width:0;">
-                        <div style="font-weight:bold;font-size:16px;">${esc(p.name)}${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}</div>
-                        <div style="font-size:12px;color:var(--text-muted);">${p.nick ? ('@' + esc(p.nick)) : ''}</div>
-                        <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;">${esc(p.email || '')}</div>
+                        <div class="roster-name">${esc(p.name)}${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}</div>
+                        <div class="roster-nick">${p.nick ? ('@' + esc(p.nick)) : ''}</div>
+                        <div class="roster-mail">${esc(p.email || '')}</div>
                     </div>
                 </div>
-                <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+                <div class="roster-fav">
                     ${pokeBox(p.favPokemon, 80)}
                     <div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Favorito</div>
+                        <div class="roster-label">Favorito</div>
                         <div style="font-weight:600;">${esc(p.favPokemon || '—')}</div>
                     </div>
                 </div>
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Equipo top-5</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">${topHtml}</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Decks</div>
+                <div class="roster-label">Equipo top-5</div>
+                <div class="roster-team">${topHtml}</div>
+                <div class="roster-label">Decks</div>
                 ${decksHtml}
             </div>`;
         }).join("");
@@ -2216,11 +2491,11 @@
                     </div>
                     <div class="vs-container">
                         <div class="player-column p1-side">
-                            <div class="player-name">${p1.name}</div>
+                            <div class="player-name">${avatarImg(p1.avatar, 40)}<span>${p1.name}</span></div>
                             <ul class="deck-order-list">${deckOrderList(m.p1DeckOrder)}</ul>
                         </div>
                         <div class="player-column p2-side">
-                            <div class="player-name">${p2.name}</div>
+                            <div class="player-name">${avatarImg(p2.avatar, 40)}<span>${p2.name}</span></div>
                             <ul class="deck-order-list">${deckOrderList(m.p2DeckOrder)}</ul>
                         </div>
                     </div>
@@ -2279,9 +2554,9 @@
             if (e.torneoId) torneos.add(e.torneoId);
             vTot += e.victorias || 0; eTot += e.empates || 0; dTot += e.derrotas || 0;
         }));
-        const kpi = (label, val) => `<div style="background:var(--panel-accent); border:1px solid var(--border-color); border-radius:8px; padding:14px; text-align:center;">
-            <div style="font-size:26px; font-weight:bold; color:var(--accent-yellow);">${val}</div>
-            <div style="font-size:12px; color:var(--text-muted);">${label}</div></div>`;
+        const kpi = (label, val) => `<div class="kpi-card">
+            <div class="kpi-value">${val}</div>
+            <div class="kpi-label">${label}</div></div>`;
         $("statsKpis").innerHTML =
             kpi("Torneos registrados", torneos.size) +
             kpi("Jugadores con historial", conHistorial.length) +
@@ -2341,10 +2616,11 @@
     let chartPoints = null, chartDecks = null, chartWLD = null;
     function renderCharts(rows, deckRows, v, e, d) {
         if (typeof Chart === "undefined") return; // CDN no disponible
-        const YELLOW = "#ffcb05", BLUE = "#3b4cca", GREEN = "#37b24d", RED = "#fa5252", MUTED = "#9aa5b5";
+        const CYAN = "#29ABE2", MAGENTA = "#EC008C", PINK = "#FA81D0", GREEN = "#22C55E", RED = "#EF4444", AMBER = "#F59F00", MUTED = "#9BA8B8";
         Chart.defaults.color = MUTED;
-        Chart.defaults.font.family = "Segoe UI, system-ui, sans-serif";
-        const noLegend = { plugins: { legend: { display: false } }, maintainAspectRatio: false };
+        Chart.defaults.font.family = "Inter, 'Segoe UI', system-ui, sans-serif";
+        const gridCfg = { color: "rgba(255,255,255,0.07)" };
+        const noLegend = { plugins: { legend: { display: false } }, maintainAspectRatio: false, scales: { x: { grid: gridCfg }, y: { grid: gridCfg, beginAtZero: true } } };
 
         if (chartPoints) chartPoints.destroy();
         if (chartDecks) chartDecks.destroy();
@@ -2353,24 +2629,24 @@
         const topP = rows.slice(0, 10);
         chartPoints = new Chart($("chartPoints"), {
             type: "bar",
-            data: { labels: topP.map(r => r.nick), datasets: [{ data: topP.map(r => r.ptsTot), backgroundColor: YELLOW }] },
+            data: { labels: topP.map(r => r.nick), datasets: [{ data: topP.map(r => r.ptsTot), backgroundColor: topP.map((_, i) => i === 0 ? MAGENTA : "rgba(41, 171, 226, 0.9)"), borderRadius: 6, borderSkipped: false }] },
             options: noLegend
         });
 
         const topD = deckRows.slice(0, 10);
         chartDecks = new Chart($("chartDecks"), {
             type: "bar",
-            data: { labels: topD.map(x => x[0]), datasets: [{ data: topD.map(x => Number(x[1]) || 0), backgroundColor: BLUE }] },
-            options: { ...noLegend, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+            data: { labels: topD.map(x => x[0]), datasets: [{ data: topD.map(x => Number(x[1]) || 0), backgroundColor: topD.map((_, i) => i === 0 ? CYAN : "rgba(250, 129, 208, 0.85)"), borderRadius: 6, borderSkipped: false }] },
+            options: { ...noLegend, scales: { x: { grid: gridCfg }, y: { grid: gridCfg, beginAtZero: true, ticks: { precision: 0 } } } }
         });
 
         chartWLD = new Chart($("chartWLD"), {
             type: "doughnut",
             data: {
                 labels: ["Victorias", "Empates", "Derrotas"],
-                datasets: [{ data: [v, e, d], backgroundColor: [GREEN, MUTED, RED] }]
+                datasets: [{ data: [v, e, d], backgroundColor: [GREEN, AMBER, RED], borderWidth: 0, hoverOffset: 8 }]
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }
+            options: { maintainAspectRatio: false, cutout: "62%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, pointStyleWidth: 10 } } } }
         });
     }
 
