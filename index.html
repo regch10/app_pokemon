@@ -339,7 +339,7 @@
         <h2>Lista de Inscritos (<span id="countDisplay">0</span>)</h2>
         <table id="playersTable">
             <thead>
-                <tr><th>Nombre</th><th>Nick</th><th>Mazo 1</th><th>Mazo 2</th><th>Mazo 3</th><th>Estado</th><th class="admin-only hidden">Acciones</th></tr>
+                <tr><th>Nombre</th><th>Nick</th><th>Decks</th><th>Estado</th><th class="admin-only hidden">Acciones</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -1660,9 +1660,7 @@
                 <tr>
                     <td><span style="display:inline-flex;align-items:center;gap:6px;">${avatarImg(p.avatar, 24)} <strong>${p.name}</strong></span>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">Entró R${p.joinedRound}</span>` : ''}</td>
                     <td>${p.nick || '-'}</td>
-                    <td>${deckImg(p.decks[0].name, 18)} ${p.decks[0].name} <span class="tier-badge ${getTierClass(p.decks[0].tier)}">${p.decks[0].tier}</span></td>
-                    <td>${deckImg(p.decks[1].name, 18)} ${p.decks[1].name} <span class="tier-badge ${getTierClass(p.decks[1].tier)}">${p.decks[1].tier}</span></td>
-                    <td>${deckImg(p.decks[2].name, 18)} ${p.decks[2].name} <span class="tier-badge ${getTierClass(p.decks[2].tier)}">${p.decks[2].tier}</span></td>
+                    <td>${(p.decks || []).map(d => `<span style="display:inline-flex; align-items:center; gap:4px; margin-right:10px; white-space:nowrap;">${deckImg(d.name, 18)} ${esc(d.name)} <span class="tier-badge ${getTierClass(d.tier)}">${d.tier}</span></span>`).join("")}</td>
                     <td style="color:${p.active ? 'var(--success-color)' : 'var(--danger)'}">${p.active ? 'Activo' : 'Drop'}</td>
                     ${isAdmin ? `<td>${p.active ? `<button class="btn-danger" style="padding:4px 8px; font-size:12px;" data-drop="${p.id}">Drop</button>` : '-'}</td>` : ''}
                 </tr>`;
