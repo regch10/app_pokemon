@@ -1205,6 +1205,7 @@
     let derived        = { players: [], byId: {} };
 
     let myPerfilCache  = null; // perfil del usuario actual (para autocompletar)
+    let myPerfilLoaded = false; // ¿Firestore ya respondió por el perfil? (evita abrir el formulario por una carga lenta)
     let myPerfilUnsub  = null; // desuscriptor del listener de mi perfil
 
     // Fase 1: visualización de rondas pasadas + cronómetro
@@ -1615,16 +1616,19 @@
     // Muestra el bloque de cuenta o el de unirse según la sesión.
     function renderRegistroState() {
         const loggedAccount = currentUser && !currentUser.isAnonymous;
-        // Si tiene cuenta pero aún no hay perfil, abre el editor para completarlo.
-        if (loggedAccount && !myPerfilCache && !editingProfile) editingProfile = true;
+        // Solo forzamos el editor cuando Firestore YA respondió y de verdad no hay perfil.
+        // (Antes, la carga lenta del perfil dejaba "pegado" el formulario completo al re-ingresar.)
+        const needsProfile = loggedAccount && myPerfilLoaded && !myPerfilCache;
+        const showEditor = loggedAccount && (editingProfile || needsProfile);
+        const loadingProfile = loggedAccount && !myPerfilLoaded;
 
-        $("accountGate").classList.toggle("hidden", loggedAccount && !editingProfile);
-        $("joinPanel").classList.toggle("hidden", !loggedAccount || editingProfile);
+        $("accountGate").classList.toggle("hidden", loggedAccount && !showEditor);
+        $("joinPanel").classList.toggle("hidden", !loggedAccount || showEditor || loadingProfile);
 
-        if (editingProfile) showRegisterMode(true);
+        if (showEditor) showRegisterMode(true);
         else if (!loggedAccount) { /* deja el modo (registro/login) que eligió el usuario */ }
 
-        if (loggedAccount && !editingProfile) {
+        if (loggedAccount && !showEditor && !loadingProfile) {
             renderProfileSummary();
             renderJoinState();
         }
@@ -2874,11 +2878,17 @@
     function subscribeMyPerfil() {
         if (myPerfilUnsub) { myPerfilUnsub(); myPerfilUnsub = null; }
         myPerfilCache = null;
+        myPerfilLoaded = false;
         if (!currentUser) return;
         myPerfilUnsub = onSnapshot(doc(PERFILES_COL, currentUser.uid), (snap) => {
             myPerfilCache = snap.exists() ? snap.data() : null;
+            myPerfilLoaded = true;
             renderRegistroState();
-        }, (err) => console.warn("perfil listener:", err.message));
+        }, (err) => {
+            console.warn("perfil listener:", err.message);
+            myPerfilLoaded = true;
+            renderRegistroState();
+        });
     }
 
     function prefillFromPerfil(force) {
