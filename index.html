@@ -203,6 +203,16 @@
         <h2>Inscripción de Competidores</h2>
         <div id="myPlayerNote" class="alert-box alert-success" style="display:none;"></div>
 
+        <!-- Tipo de torneo (solo organizador; se bloquea al iniciar) -->
+        <div id="tourneySettings" class="admin-only hidden" style="background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <span style="font-size:13px;">Tipo de torneo:</span>
+            <select id="deckModeSelect" style="width:auto;">
+                <option value="3">3 Decks</option>
+                <option value="1">1 Deck (normal)</option>
+            </select>
+            <span id="deckModeHint" class="hint" style="font-size:12px; color:var(--text-muted);"></span>
+        </div>
+
         <!-- Control de registro tardío (solo organizador, con torneo en curso) -->
         <div id="lateRegBar" class="admin-only hidden" style="background:var(--panel-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
             <span style="font-size:13px;">Registro tardío: <strong id="lateRegState" style="color:var(--danger);">Cerrado</strong></span>
@@ -305,18 +315,20 @@
             </div>
 
             <div id="joinDecks">
-                <h3>Tus 3 decks para este torneo</h3>
+                <h3 id="joinDecksTitle">Tus 3 decks para este torneo</h3>
                 <div class="deck-grid">
                     <input type="text" id="deck1Name" placeholder="Mazo 1">
                     <select id="deck1Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S (Máx. 1)</option><option value="FUN">Tier FUN</option></select>
                 </div>
-                <div class="deck-grid">
-                    <input type="text" id="deck2Name" placeholder="Mazo 2">
-                    <select id="deck2Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S</option><option value="FUN">Tier FUN</option></select>
-                </div>
-                <div class="deck-grid">
-                    <input type="text" id="deck3Name" placeholder="Mazo 3">
-                    <select id="deck3Tier"><option value="FUN" selected>Tier FUN</option><option value="Tier S">Tier S</option><option value="Tier 1-4">Tier 1 a 4</option></select>
+                <div id="extraDecks">
+                    <div class="deck-grid">
+                        <input type="text" id="deck2Name" placeholder="Mazo 2">
+                        <select id="deck2Tier"><option value="Tier 1-4" selected>Tier 1 a 4</option><option value="Tier S">Tier S</option><option value="FUN">Tier FUN</option></select>
+                    </div>
+                    <div class="deck-grid">
+                        <input type="text" id="deck3Name" placeholder="Mazo 3">
+                        <select id="deck3Tier"><option value="FUN" selected>Tier FUN</option><option value="Tier S">Tier S</option><option value="Tier 1-4">Tier 1 a 4</option></select>
+                    </div>
                 </div>
                 <button class="btn-accent" style="margin-top: 10px;" id="btnJoinTournament">➕ Inscribirme en el torneo</button>
                 <p id="registerHint" style="font-size: 12px; color: var(--text-muted); margin-top: 10px;"></p>
@@ -344,9 +356,11 @@
             <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                 <div style="text-align:center;">
                     <div id="timerDisplay" style="font-size:30px; font-weight:bold; font-variant-numeric:tabular-nums; color:var(--success-color); line-height:1;">50:00</div>
-                    <div style="font-size:11px; color:var(--text-muted);">Cronómetro de ronda (50 min)</div>
+                    <div id="timerLabel" style="font-size:11px; color:var(--text-muted);">Cronómetro de ronda (50 min)</div>
                 </div>
-                <div class="admin-only hidden" style="display:flex; gap:6px; flex-wrap:wrap;">
+                <div class="admin-only hidden" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <span style="display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--text-muted);"><input type="number" id="roundMinsInput" min="1" max="180" placeholder="50" style="width:56px; padding:4px 6px; text-align:center;"> min</span>
+                    <button id="btnSetMins" class="btn-secondary" style="padding:6px 10px; font-size:12px;">Fijar</button>
                     <button id="btnTimerStart" class="btn-secondary" style="padding:6px 10px; font-size:12px;">▶️ Iniciar</button>
                     <button id="btnTimerPause" class="btn-secondary" style="padding:6px 10px; font-size:12px;">⏸️ Pausar</button>
                     <button id="btnTimerReset" class="btn-secondary" style="padding:6px 10px; font-size:12px;">🔄 Reiniciar</button>
@@ -482,17 +496,7 @@
     <div id="reglas" class="panel">
         <h2>📜 Reglas del Torneo</h2>
         <div class="rules-content">
-            <h3>Formato de Creación de Equipos</h3>
-            <ul>
-                <li>Cada jugador debe inscribirse con exactamente <strong>3 mazos diferentes</strong>.</li>
-                <li><strong>Regla de Tiers:</strong> máximo <strong>un (1) mazo Tier S</strong> por jugador.</li>
-            </ul>
-            <hr style="border: 1px solid var(--border-color); margin: 20px 0;">
-            <h3>Mecánica de Enfrentamientos</h3>
-            <ul>
-                <li>Al generar una ronda, el sistema <strong>sorteará aleatoriamente el orden</strong> de los 3 mazos (Juego 1, 2 y 3).</li>
-                <li>Los jugadores deben respetar el orden de mazos dictado por la aplicación en su mesa.</li>
-            </ul>
+            <div id="rulesDynamic"></div>
             <hr style="border: 1px solid var(--border-color); margin: 20px 0;">
             <h3>Sistema de Torneo (Suizo Oficial)</h3>
             <ul>
@@ -573,7 +577,11 @@
     let viewedRound   = null;              // ronda que se está viendo (null = ronda actual)
     let showEditForms = false;             // modo edición de resultados (botón "Editar Ronda")
     let editingProfile = false;            // editando el perfil (bloque de cuenta abierto con sesión)
-    const ROUND_SECONDS = 50 * 60;          // 50 minutos por ronda
+    const ROUND_SECONDS = 50 * 60;          // fallback (50 min) si no hay config
+    // Minutos por ronda configurables por el organizador (estado.roundMinutes).
+    function roundSeconds() { const m = parseInt(estadoCache.roundMinutes, 10); return (m > 0 ? m : 50) * 60; }
+    // Tipo de torneo: 1 deck (normal) o 3 decks. Por defecto 3.
+    function deckCount() { return estadoCache.deckMode === 1 ? 1 : 3; }
     let alarmFiredFor = null;               // timerEndsAt para el que ya sonó la alarma
     const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -758,6 +766,7 @@
         if (tabId === "historial") renderHistorial();
         if (tabId === "calendario") renderBirthdays();
         if (tabId === "jugadores") renderRoster();
+        if (tabId === "reglas") renderRules();
     }
 
     /* ============================================================
@@ -847,13 +856,14 @@
         if (torneoEnCurso && !isAdmin && !lateOpen) {
             alert("❌ El torneo ya comenzó y el registro tardío está cerrado. Pide al organizador que lo abra."); return;
         }
-        const decks = [
-            { name: $("deck1Name").value.trim(), tier: $("deck1Tier").value },
-            { name: $("deck2Name").value.trim(), tier: $("deck2Tier").value },
-            { name: $("deck3Name").value.trim(), tier: $("deck3Tier").value }
-        ];
-        if (decks.some(d => !d.name)) { alert("❌ Ingresa tus 3 decks."); return; }
-        if (decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S."); return; }
+        const dc = deckCount();
+        const decks = [{ name: $("deck1Name").value.trim(), tier: $("deck1Tier").value }];
+        if (dc > 1) {
+            decks.push({ name: $("deck2Name").value.trim(), tier: $("deck2Tier").value });
+            decks.push({ name: $("deck3Name").value.trim(), tier: $("deck3Tier").value });
+        }
+        if (decks.some(d => !d.name)) { alert(dc === 1 ? "❌ Ingresa tu deck." : "❌ Ingresa tus 3 decks."); return; }
+        if (dc > 1 && decks.filter(d => d.tier === "Tier S").length > 1) { alert("❌ Regla infringida: solo 1 mazo Tier S."); return; }
 
         const email = (prof.email || currentUser.email || "").toLowerCase();
         // Un correo = un jugador por torneo.
@@ -936,6 +946,7 @@
     }
 
     function renderJoinState() {
+        updateDeckInputs();
         const mine = currentUser && Object.values(jugadoresCache).find(p => p.ownerUid === currentUser.uid);
         const torneoEnCurso = estadoCache.currentRoundNumber > 0;
         const lateOpen = !!estadoCache.lateRegistrationOpen;
@@ -1090,7 +1101,7 @@
                 isFinished: false, torneoId,
                 // El cronómetro queda en pausa (50:00). El organizador lo arranca
                 // con "Iniciar Ronda" tras revisar los emparejamientos.
-                timerRunning: false, timerRemaining: ROUND_SECONDS, timerEndsAt: null
+                timerRunning: false, timerRemaining: roundSeconds(), timerEndsAt: null
             }, { merge: true });
             await batch.commit();
             alarmFiredFor = null;               // permite que la alarma vuelva a sonar
@@ -1141,7 +1152,7 @@
             const batch = writeBatch(db);
             (await getDocs(collection(db, "rondas", "r" + roundNumber, "matches"))).forEach(d => batch.delete(d.ref));
             roundMatches.forEach(m => batch.set(doc(db, "rondas", "r" + roundNumber, "matches", m.matchId), m));
-            batch.set(ESTADO_REF, { timerRunning: false, timerRemaining: ROUND_SECONDS, timerEndsAt: null }, { merge: true });
+            batch.set(ESTADO_REF, { timerRunning: false, timerRemaining: roundSeconds(), timerEndsAt: null }, { merge: true });
             await batch.commit();
             alarmFiredFor = null; showEditForms = false; viewedRound = null;
             toast("🔄 Ronda " + roundNumber + " regenerada");
@@ -1214,8 +1225,10 @@
         const canEditP1 = isAdmin || (currentUser && currentUser.uid === match.p1OwnerUid);
         const canEditP2 = isAdmin || (currentUser && currentUser.uid === match.p2OwnerUid);
         const payload = { completed: true, winner, p1Games: g1, p2Games: g2 };
-        if (canEditP1) payload.p1Played = readOrder("d1");
-        if (canEditP2) payload.p2Played = readOrder("d2");
+        if (deckCount() > 1) {
+            if (canEditP1) payload.p1Played = readOrder("d1");
+            if (canEditP2) payload.p2Played = readOrder("d2");
+        }
 
         try {
             await updateDoc(
@@ -1368,6 +1381,58 @@
         } catch (e) { alert("❌ " + e.message); }
     }
 
+    // Tipo de torneo (1 o 3 decks). Solo antes de iniciar.
+    async function writeDeckMode(v) {
+        if (!isAdmin) return;
+        if (estadoCache.currentRoundNumber > 0) { toast("No se puede cambiar el tipo con el torneo en curso"); return; }
+        try {
+            await setDoc(ESTADO_REF, { deckMode: (v === 1 ? 1 : 3) }, { merge: true });
+            toast("Tipo de torneo: " + (v === 1 ? "1 deck" : "3 decks"));
+        } catch (e) { alert("❌ " + e.message); }
+    }
+    // Muestra 1 o 3 casillas de deck en el registro según el tipo de torneo.
+    function updateDeckInputs() {
+        const dc = deckCount();
+        const t = $("joinDecksTitle");
+        if (t) t.textContent = dc === 1 ? "Tu deck para este torneo" : "Tus 3 decks para este torneo";
+        const ex = $("extraDecks");
+        if (ex) ex.style.display = dc === 1 ? "none" : "block";
+    }
+
+    // Pestaña Reglas: formato y mecánica según el tipo de torneo (1 o 3 decks).
+    function renderRules() {
+        const el = $("rulesDynamic");
+        if (!el) return;
+        const mins = Math.round(roundSeconds() / 60);
+        if (deckCount() === 1) {
+            el.innerHTML = `
+                <h3>Formato del Torneo (Normal · 1 Deck)</h3>
+                <ul>
+                    <li>Cada jugador se inscribe con <strong>un (1) deck</strong>, con el que juega todo el torneo.</li>
+                </ul>
+                <hr style="border: 1px solid var(--border-color); margin: 20px 0;">
+                <h3>Mecánica de Enfrentamientos</h3>
+                <ul>
+                    <li>Cada ronda tiene un tiempo de <strong>${mins} minutos</strong>.</li>
+                    <li>Al terminar, se reporta el <strong>marcador</strong> de la partida.</li>
+                </ul>`;
+        } else {
+            el.innerHTML = `
+                <h3>Formato de Creación de Equipos (3 Decks)</h3>
+                <ul>
+                    <li>Cada jugador debe inscribirse con exactamente <strong>3 mazos diferentes</strong>.</li>
+                    <li><strong>Regla de Tiers:</strong> máximo <strong>un (1) mazo Tier S</strong> por jugador.</li>
+                </ul>
+                <hr style="border: 1px solid var(--border-color); margin: 20px 0;">
+                <h3>Mecánica de Enfrentamientos</h3>
+                <ul>
+                    <li>La app <strong>sugiere</strong> un orden de los 3 mazos (Juego 1, 2 y 3) al generar la ronda.</li>
+                    <li>Al reportar, cada jugador indica <strong>el orden real</strong> en que jugó sus 3 mazos (solo su propio lado).</li>
+                    <li>Cada ronda tiene un tiempo de <strong>${mins} minutos</strong>. Al terminar se reporta el <strong>marcador</strong>.</li>
+                </ul>`;
+        }
+    }
+
     /* ============================================================
        RELOJ + CRONÓMETRO DE RONDA (50 min) + ALARMA
        El cronómetro se ancla a torneo_estado (timerEndsAt) para que
@@ -1379,7 +1444,7 @@
         if (running && estadoCache.timerEndsAt) {
             remaining = Math.max(0, Math.round((estadoCache.timerEndsAt - Date.now()) / 1000));
         } else {
-            remaining = (estadoCache.timerRemaining != null) ? estadoCache.timerRemaining : ROUND_SECONDS;
+            remaining = (estadoCache.timerRemaining != null) ? estadoCache.timerRemaining : roundSeconds();
         }
         return { running, remaining };
     }
@@ -1395,6 +1460,10 @@
     function updateTimerDisplay() {
         const el = $("timerDisplay");
         if (!el) return;
+        const lbl = $("timerLabel");
+        if (lbl) lbl.textContent = `Cronómetro de ronda (${Math.round(roundSeconds() / 60)} min)`;
+        const mi = $("roundMinsInput");
+        if (mi && document.activeElement !== mi) mi.value = estadoCache.roundMinutes || "";
         const { running, remaining } = timerState();
         const m = Math.floor(remaining / 60), s = remaining % 60;
         el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
@@ -1432,7 +1501,7 @@
             try { await Notification.requestPermission(); } catch (e) {}
         }
         const { remaining } = timerState();
-        const rem = remaining > 0 ? remaining : ROUND_SECONDS;
+        const rem = remaining > 0 ? remaining : roundSeconds();
         alarmFiredFor = null;
         try { await setDoc(ESTADO_REF, { timerRunning: true, timerEndsAt: Date.now() + rem * 1000, timerRemaining: null }, { merge: true }); }
         catch (e) { alert("❌ " + e.message); }
@@ -1446,7 +1515,7 @@
     async function timerReset() {
         if (!isAdmin) return;
         alarmFiredFor = null;
-        try { await setDoc(ESTADO_REF, { timerRunning: false, timerRemaining: ROUND_SECONDS, timerEndsAt: null }, { merge: true }); }
+        try { await setDoc(ESTADO_REF, { timerRunning: false, timerRemaining: roundSeconds(), timerEndsAt: null }, { merge: true }); }
         catch (e) { alert("❌ " + e.message); }
     }
     async function timerAddFive() {
@@ -1456,6 +1525,17 @@
         try {
             if (running) await setDoc(ESTADO_REF, { timerEndsAt: Date.now() + nr * 1000 }, { merge: true });
             else await setDoc(ESTADO_REF, { timerRemaining: nr }, { merge: true });
+        } catch (e) { alert("❌ " + e.message); }
+    }
+    // Fija los minutos por ronda (deja el cronómetro en pausa con ese tiempo).
+    async function setRoundMinutes(mins) {
+        if (!isAdmin) return;
+        const m = parseInt(mins, 10);
+        if (!(m > 0) || m > 180) { toast("Minutos válidos: 1 a 180"); return; }
+        alarmFiredFor = null;
+        try {
+            await setDoc(ESTADO_REF, { roundMinutes: m, timerRunning: false, timerRemaining: m * 60, timerEndsAt: null }, { merge: true });
+            toast("⏱️ Ronda de " + m + " minutos");
         } catch (e) { alert("❌ " + e.message); }
     }
 
@@ -1589,6 +1669,16 @@
         });
         $("countDisplay").innerText = list.length;
 
+        // Tipo de torneo (solo organizador; se bloquea al iniciar)
+        const ts = $("tourneySettings");
+        if (ts) ts.style.display = isAdmin ? "flex" : "none";
+        const dms = $("deckModeSelect");
+        if (dms) { dms.value = String(deckCount()); dms.disabled = estadoCache.currentRoundNumber > 0; }
+        const dmh = $("deckModeHint");
+        if (dmh) dmh.textContent = estadoCache.currentRoundNumber > 0
+            ? "🔒 Bloqueado: el torneo ya empezó."
+            : (deckCount() === 1 ? "Cada jugador usa 1 deck." : "Cada jugador usa 3 decks (máx. 1 Tier S).");
+
         // Barra de control del organizador (registro tardío, solo con torneo en curso)
         const inCourse = estadoCache.currentRoundNumber > 0;
         const lateOpen = !!estadoCache.lateRegistrationOpen;
@@ -1620,6 +1710,14 @@
             `<option value="${esc(d.name)}" ${d.name === selectedName ? "selected" : ""}>${esc(d.name)}</option>`
         ).join("");
         return `<select id="${id}" class="mini-select"${disabled ? " disabled title='Solo el dueño de esta mesa o el organizador pueden cambiar este lado'" : ""}>${opts}</select>`;
+    }
+
+    // Lista sugerida de decks del match, adaptada a 1 o 3 decks.
+    function deckOrderList(order) {
+        const arr = order || [];
+        return arr.map((d, i) =>
+            `<li class="deck-order-item">${i < 2 ? "⚔️" : "🔮"} ${arr.length > 1 ? ("Juego " + (i + 1)) : "Deck"}: ${deckImg(d.name, 16)} <strong>${esc(d.name)}</strong></li>`
+        ).join("");
     }
 
     // Ronda que se debe visualizar: la seleccionada (viewedRound) si es válida,
@@ -1783,7 +1881,7 @@
                         <input type="number" min="0" max="9" id="g2_${mid}" value="${g2v}" style="width:56px; text-align:center;">
                         <strong style="color:#fa5252">${p2.name}</strong>
                      </div>
-                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                     ${deckCount() > 1 ? `<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
                         <div>
                            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p1.name}:${canEditP1 ? "" : " 🔒"}</div>
                            ${["a","b","c"].map((k,i)=>deckSelect("d1"+k+"_"+mid, p1.decks, ord(m.p1Played, m.p1DeckOrder, i), !canEditP1)).join(" ")}
@@ -1792,7 +1890,7 @@
                            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Orden que jugó ${p2.name}:${canEditP2 ? "" : " 🔒"}</div>
                            ${["a","b","c"].map((k,i)=>deckSelect("d2"+k+"_"+mid, p2.decks, ord(m.p2Played, m.p2DeckOrder, i), !canEditP2)).join(" ")}
                         </div>
-                     </div>
+                     </div>` : ""}
                      <div style="text-align:center;">
                         <button class="btn-accent" data-savereport="${mid}">💾 Guardar resultado</button>
                         ${winLabel ? `<span style="margin-left:10px; color:var(--success-color); font-weight:600;">${winLabel}</span>` : ""}
@@ -1822,19 +1920,11 @@
                     <div class="vs-container">
                         <div class="player-column p1-side">
                             <div class="player-name">${p1.name}</div>
-                            <ul class="deck-order-list">
-                                <li class="deck-order-item">⚔️ Juego 1: ${deckImg(m.p1DeckOrder[0].name, 16)} <strong>${m.p1DeckOrder[0].name}</strong></li>
-                                <li class="deck-order-item">⚔️ Juego 2: ${deckImg(m.p1DeckOrder[1].name, 16)} <strong>${m.p1DeckOrder[1].name}</strong></li>
-                                <li class="deck-order-item">🔮 Juego 3: ${deckImg(m.p1DeckOrder[2].name, 16)} <strong>${m.p1DeckOrder[2].name}</strong></li>
-                            </ul>
+                            <ul class="deck-order-list">${deckOrderList(m.p1DeckOrder)}</ul>
                         </div>
                         <div class="player-column p2-side">
                             <div class="player-name">${p2.name}</div>
-                            <ul class="deck-order-list">
-                                <li class="deck-order-item">⚔️ Juego 1: ${deckImg(m.p2DeckOrder[0].name, 16)} <strong>${m.p2DeckOrder[0].name}</strong></li>
-                                <li class="deck-order-item">⚔️ Juego 2: ${deckImg(m.p2DeckOrder[1].name, 16)} <strong>${m.p2DeckOrder[1].name}</strong></li>
-                                <li class="deck-order-item">🔮 Juego 3: ${deckImg(m.p2DeckOrder[2].name, 16)} <strong>${m.p2DeckOrder[2].name}</strong></li>
-                            </ul>
+                            <ul class="deck-order-list">${deckOrderList(m.p2DeckOrder)}</ul>
                         </div>
                     </div>
                     <div class="match-actions">${actions}</div>
@@ -2059,6 +2149,7 @@
         renderHistorial();
         renderBirthdays();
         renderRoster();
+        renderRules();
         renderRegistroState();
     }
 
@@ -2258,6 +2349,7 @@
         $("btnEditProfile").addEventListener("click", editProfile);
         $("btnLogoutAccount").addEventListener("click", accountLogout);
         $("btnJoinTournament").addEventListener("click", joinTournament);
+        $("deckModeSelect").addEventListener("change", (e) => writeDeckMode(parseInt(e.target.value, 10)));
         $("btnReset").addEventListener("click", resetTournament);
         $("btnExport").addEventListener("click", exportTournament);
         $("btnWipe").addEventListener("click", resetTotal);
@@ -2274,6 +2366,7 @@
         $("btnTimerPause").addEventListener("click", timerPause);
         $("btnTimerReset").addEventListener("click", timerReset);
         $("btnTimerPlus").addEventListener("click", timerAddFive);
+        $("btnSetMins").addEventListener("click", () => setRoundMinutes($("roundMinsInput").value));
         $("btnAdminLogin").addEventListener("click", adminLogin);
         $("btnAdminLogout").addEventListener("click", adminLogout);
         $("btnAdminReset").addEventListener("click", () => sendReset("adminEmail"));
