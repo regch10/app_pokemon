@@ -59,6 +59,15 @@
             0%, 100% { border-color: rgba(41, 171, 226, 0.7); box-shadow: 0 0 12px rgba(41, 171, 226, 0.3); }
             50% { border-color: rgba(236, 0, 140, 0.7); box-shadow: 0 0 18px rgba(236, 0, 140, 0.35); }
         }
+        @keyframes heroGrid {
+            from { background-position: 0 0, 0 0, 0 0, 0 0; }
+            to   { background-position: 0 0, 0 0, 32px 32px, 32px 32px; }
+        }
+        @keyframes heroSweep {
+            0% { left: -85%; }
+            55% { left: 125%; }
+            100% { left: 125%; }
+        }
 
         html { scrollbar-color: #29ABE2 #4b4b4d; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -140,10 +149,23 @@
             background:
                 radial-gradient(ellipse 45% 90% at 88% 15%, rgba(236, 0, 140, 0.20), transparent),
                 radial-gradient(ellipse 50% 90% at 8% 10%, rgba(41, 171, 226, 0.20), transparent),
-                linear-gradient(rgba(41, 171, 226, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(41, 171, 226, 0.06) 1px, transparent 1px),
+                linear-gradient(rgba(41, 171, 226, 0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(41, 171, 226, 0.07) 1px, transparent 1px),
                 #161619;
             background-size: auto, auto, 32px 32px, 32px 32px;
+            animation: heroGrid 7s linear infinite;
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute; top: -60%; bottom: -60%; width: 55%; left: -85%;
+            background: linear-gradient(100deg, transparent 15%, rgba(41, 171, 226, 0.14) 45%, rgba(250, 129, 208, 0.16) 55%, transparent 85%);
+            transform: skewX(-18deg);
+            animation: heroSweep 5.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        .hero-banner .big-title span {
+            background-size: 200% 100%;
+            animation: gradientShift 4s ease infinite;
         }
         .hero-banner::after {
             content: '';
@@ -281,49 +303,78 @@
         .admin-bar .hint { font-size: 12px; color: var(--text-muted); width: 100%; }
         .uid-box { font-family: monospace; font-size: 12px; background: var(--bg-color); padding: 4px 8px; border-radius: 4px; color: var(--cyan); border: 1px dashed var(--border-color); user-select: all; }
 
-        /* ===== Tabs (sticky, glass sobre el gris) ===== */
+        /* ===== Tabs: tarjetas en grid sobre vidrio gris (sin scroll horizontal) ===== */
         .tabs {
-            position: sticky; top: 0; z-index: 60;
-            display: flex; gap: 5px; margin-bottom: 16px;
-            background: rgba(28, 28, 31, 0.88);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(41, 171, 226, 0.15);
-            border-radius: 12px;
-            overflow-x: auto; padding: 5px 6px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.30);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+            padding: 12px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(178, 177, 175, 0.42), rgba(148, 147, 145, 0.34));
+            border: 1px solid rgba(255, 255, 255, 0.30);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.28);
         }
         .tab {
-            position: relative;
-            padding: 11px 18px; background: none; color: var(--text-muted);
-            border: none; border-radius: 8px; font-size: 15px; white-space: nowrap;
-            font-family: var(--font-display); font-weight: 600; letter-spacing: 0.4px;
-            text-transform: uppercase;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 7px; padding: 14px 8px 12px;
+            background: linear-gradient(180deg, #2B2B30 0%, #1E1E22 100%);
+            border: 1px solid rgba(41, 171, 226, 0.18);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            color: var(--text-muted);
+            font-family: var(--font-display);
+            transition: transform 0.22s ease, background 0.22s ease, color 0.22s ease, border-color 0.22s ease;
         }
-        .tab:hover { color: var(--text-main); background-color: rgba(41, 171, 226, 0.07); transform: none; }
+        .tab::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: var(--gradient-sig);
+            opacity: 0; transition: opacity 0.22s ease;
+        }
+        .tab:hover {
+            transform: translateY(-3px); color: #fff;
+            border-color: rgba(41, 171, 226, 0.5);
+            background: linear-gradient(180deg, #303038 0%, #232327 100%);
+        }
+        .tab:hover::before { opacity: 1; }
+        .tab-ico { font-size: 26px; line-height: 1; filter: grayscale(35%) opacity(0.8); transition: transform 0.22s ease, filter 0.22s ease; }
+        .tab:hover .tab-ico, .tab.active .tab-ico { filter: none; transform: scale(1.15); }
+        .tab-txt {
+            display: flex; flex-direction: column; align-items: center;
+            font-weight: 700; font-size: 14px; letter-spacing: 0.8px;
+            text-transform: uppercase; line-height: 1.15; text-align: center;
+        }
+        .tab-txt small { font-size: 9px; font-weight: 600; letter-spacing: 1.6px; color: var(--text-muted); margin-top: 3px; transition: color 0.22s ease; }
         .tab.active {
             color: #fff;
-            background: rgba(41, 171, 226, 0.10);
-            box-shadow: 0 4px 15px rgba(41, 171, 226, 0.30);
-            font-weight: 700;
-        }
-        .tab.active::after {
-            content: '';
-            position: absolute; left: 10px; right: 10px; bottom: 2px; height: 3px;
             background: var(--gradient-sig);
             background-size: 200% 100%;
-            animation: gradientShift 4s ease infinite;
-            border-radius: 3px;
+            animation: gradientShift 5s ease infinite;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(236, 0, 140, 0.35), 0 8px 20px rgba(41, 171, 226, 0.25);
         }
+        .tab.active::before { opacity: 0; }
+        .tab.active .tab-txt small { color: rgba(255, 255, 255, 0.85); }
+        .tab.active:hover { transform: translateY(-2px); }
 
         /* ===== Panels ===== */
         .panel {
-            background: linear-gradient(180deg, #242428 0%, #202024 100%);
+            position: relative;
+            background:
+                radial-gradient(ellipse 60% 45% at 12% 0%, rgba(41, 171, 226, 0.07), transparent 60%),
+                radial-gradient(ellipse 50% 40% at 95% 100%, rgba(236, 0, 140, 0.06), transparent 65%),
+                linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(165deg, #3B3B40 0%, #333338 48%, #2D2D32 100%);
+            background-size: auto, auto, 42px 42px, 42px 42px, auto;
             padding: clamp(16px, 2vw, 28px);
             border-radius: 14px;
-            border: 1px solid rgba(41, 171, 226, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.10);
             display: none;
-            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
         .panel.active { display: block; animation: fadeInUp 0.3s ease-out; }
 
@@ -357,6 +408,7 @@
 
         /* ===== Tablas ===== */
         table {
+            background: #202024;
             width: 100%; border-collapse: separate; border-spacing: 0;
             margin-top: 15px; font-size: 14px;
             border-radius: 10px; overflow: hidden;
@@ -701,6 +753,11 @@
             th, td { padding: 9px 10px; font-size: 13px; }
             body::before, body::after { opacity: 0.5; }
             .hero-banner { padding: 20px 16px; }
+            .tabs { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); padding: 8px; gap: 8px; }
+            .tab { padding: 10px 6px 9px; gap: 5px; }
+            .tab-ico { font-size: 22px; }
+            .tab-txt { font-size: 12px; }
+            .tab-txt small { font-size: 8px; letter-spacing: 1.1px; }
         }
 
         /* ===== Reduced motion ===== */
@@ -752,13 +809,13 @@
     </div>
 
     <div class="tabs">
-        <button class="tab active" data-tab="registro">👥 Registro</button>
-        <button class="tab" data-tab="rondas">⚔️ Rondas y Emparejamientos</button>
-        <button class="tab" data-tab="posiciones">📊 Tabla de Posiciones</button>
-        <button class="tab" data-tab="jugadores">🧑‍🤝‍🧑 Jugadores</button>
-        <button class="tab" data-tab="historial">📈 Historial</button>
-        <button class="tab" data-tab="calendario">🎂 Calendario</button>
-        <button class="tab" data-tab="reglas">📜 Reglas</button>
+        <button class="tab active" data-tab="registro"><span class="tab-ico">👥</span><span class="tab-txt">Registro<small>Inscríbete</small></span></button>
+        <button class="tab" data-tab="rondas"><span class="tab-ico">⚔️</span><span class="tab-txt">Rondas<small>Emparejamientos</small></span></button>
+        <button class="tab" data-tab="posiciones"><span class="tab-ico">📊</span><span class="tab-txt">Posiciones<small>Standings</small></span></button>
+        <button class="tab" data-tab="jugadores"><span class="tab-ico">🧑‍🤝‍🧑</span><span class="tab-txt">Jugadores<small>Roster</small></span></button>
+        <button class="tab" data-tab="historial"><span class="tab-ico">📈</span><span class="tab-txt">Historial<small>Estadísticas</small></span></button>
+        <button class="tab" data-tab="calendario"><span class="tab-ico">🎂</span><span class="tab-txt">Calendario<small>Cumpleaños</small></span></button>
+        <button class="tab" data-tab="reglas"><span class="tab-ico">📜</span><span class="tab-txt">Reglas<small>Torneo</small></span></button>
     </div>
 
     <!-- PESTAÑA: REGISTRO -->
