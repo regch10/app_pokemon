@@ -744,6 +744,44 @@
         .glow-cyan { box-shadow: 0 0 15px rgba(41, 171, 226, 0.4); }
         .glow-magenta { box-shadow: 0 0 15px rgba(236, 0, 140, 0.4); }
 
+        /* ===== Ficha de jugador (popup) ===== */
+        [data-pc] { cursor: pointer; }
+        .pm-overlay {
+            position: fixed; inset: 0; z-index: 900;
+            background: rgba(10, 10, 12, 0.72);
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .pm-card {
+            position: relative;
+            width: min(480px, 100%);
+            max-height: 86vh; overflow-y: auto;
+            background: linear-gradient(180deg, #26262B 0%, #1D1D21 100%);
+            border: 1px solid rgba(41, 171, 226, 0.35);
+            clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+            padding: 22px;
+            animation: fadeInUp 0.25s ease-out;
+        }
+        .pm-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--gradient-sig);
+        }
+        .pm-close {
+            position: absolute; top: 10px; right: 10px;
+            width: 34px; height: 34px; padding: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.06); color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px;
+        }
+        .pm-close:hover { color: #fff; border-color: var(--magenta); box-shadow: 0 0 10px rgba(236, 0, 140, 0.4); }
+        .pm-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+        .pm-name { font-family: var(--font-display); font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.4px; color: #fff; }
+        .pm-nick { color: var(--cyan); font-weight: 600; font-size: 13px; }
+        .pm-meta { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+        .pm-sec { margin-bottom: 12px; padding-top: 10px; border-top: 1px dashed rgba(155, 168, 184, 0.2); }
+        .pm-stats-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 13px; padding: 6px 0; }
+        .pm-stats-row > span:first-child { font-family: var(--font-display); font-weight: 700; min-width: 88px; }
+
         /* ===== Responsive ===== */
         @media (max-width: 640px) {
             body { padding: 10px 10px 30px; }
@@ -1066,6 +1104,20 @@
         <p style="color: var(--text-muted); font-size: 13px; margin:12px 0 15px;">
             Datos acumulados de torneos finalizados. Cada jugador conserva su historial si vincula su identidad (mismo correo entre torneos).
         </p>
+        <div id="histFilters" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:18px;">
+            <div class="form-group" style="margin:0; min-width:180px;">
+                <label for="histModeFilter" style="font-size:12px;">Modo de torneo:</label>
+                <select id="histModeFilter">
+                    <option value="">Todos los modos</option>
+                    <option value="1">🃏 Normal (1 deck)</option>
+                    <option value="3">🎴 3 Decks</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin:0; min-width:220px;">
+                <label for="histTorneoFilter" style="font-size:12px;">Torneo:</label>
+                <select id="histTorneoFilter"><option value="">Todos los torneos</option></select>
+            </div>
+        </div>
         <div id="statsKpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:25px;"></div>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; margin-bottom:30px;">
@@ -1145,6 +1197,13 @@
                 <li><strong>Buchholz:</strong> suma de los puntos finales de los oponentes enfrentados.</li>
             </ul>
         </div>
+    </div>
+</div>
+
+<div id="playerModal" class="pm-overlay hidden">
+    <div class="pm-card">
+        <button id="pmClose" class="pm-close" title="Cerrar">✕</button>
+        <div id="pmBody"></div>
     </div>
 </div>
 
@@ -1290,7 +1349,9 @@
 
     /* ===== Avatares de entrenador (36 imágenes en /trainers) ===== */
     const TRAINER_BASE = "https://regch10.github.io/app_pokemon/trainers";
-    const TRAINER_COUNT = 36;
+    // Sube más avatares a /trainers como (37).png, (38).png… hasta (80).png y
+    // aparecerán solos: los números sin imagen se ocultan con onerror.
+    const TRAINER_COUNT = 80;
     function trainerUrl(n) { return TRAINER_BASE + "/" + encodeURIComponent("(" + n + ").png"); }
     // Los trainers son sprites de cuerpo completo (verticales): se muestran en
     // un recuadro vertical con object-fit:contain para verlos COMPLETOS.
@@ -1849,6 +1910,13 @@
         const g1 = parseInt(($("g1_" + matchId) || {}).value, 10);
         const g2 = parseInt(($("g2_" + matchId) || {}).value, 10);
         if (isNaN(g1) || isNaN(g2) || g1 < 0 || g2 < 0) { toast("Ingresa el marcador (ej. 2 y 1)"); return; }
+        const maxG = deckCount() > 1 ? 3 : 2;
+        if (g1 > maxG || g2 > maxG || (g1 + g2) > 3) {
+            alert(deckCount() > 1
+                ? "❌ Marcador inválido: en torneo de 3 decks se juegan máximo 3 juegos (ej. 2–1 o 3–0)."
+                : "❌ Marcador inválido: en torneo normal (Bo3/Bo1) el máximo por jugador es 2 (ej. 2–0, 2–1 o 1–0).");
+            return;
+        }
 
         const winner = g1 > g2 ? "p1" : (g2 > g1 ? "p2" : "tie");
         const readOrder = (pfx) => ["a", "b", "c"]
@@ -1898,6 +1966,7 @@
                 const entry = {
                     torneoId: estadoCache.torneoId,
                     fecha: new Date().toISOString().slice(0, 10),
+                    modo: deckCount(),
                     posicion: idx + 1,
                     puntos: p.points, buchholz: p.buchholz,
                     victorias: p.wins, empates: p.ties, derrotas: p.losses,
@@ -2184,13 +2253,16 @@
         const grid = $("birthdayGrid");
         if (!grid) return;
         const map = {};
-        const add = (name, nick, bday, fav) => {
+        // Dedupe por IDENTIDAD (uid del perfil o correo), no por nombre: si un
+        // jugador edita su nombre ya no aparece duplicado. Los perfiles van
+        // primero, así siempre gana el nombre más actualizado.
+        const add = (name, nick, bday, fav, email, pid) => {
             if (!bday) return;
-            const key = (name || "").toLowerCase() + "|" + bday;
-            if (!map[key]) map[key] = { name: name || "(sin nombre)", nick: nick || "", bday, fav: fav || "" };
+            const key = (pid || "") || (email || "").toLowerCase() || ((name || "").toLowerCase() + "|" + bday);
+            if (!map[key]) map[key] = { name: name || "(sin nombre)", nick: nick || "", bday, fav: fav || "", email: (email || "").toLowerCase(), pid: pid || "" };
         };
-        perfilesCache.forEach(p => add(p.name, p.nick, p.birthday, p.favPokemon));
-        Object.values(jugadoresCache).forEach(p => add(p.name, p.nick, p.birthday, p.favPokemon));
+        perfilesCache.forEach(p => add(p.name, p.nick, p.birthday, p.favPokemon, p.email, p.id));
+        Object.values(jugadoresCache).forEach(p => add(p.name, p.nick, p.birthday, p.favPokemon, p.email, p.profileId));
 
         const byMonth = Array.from({ length: 12 }, () => []);
         Object.values(map).forEach(e => {
@@ -2214,7 +2286,7 @@
                     ${isCur ? '<span class="cal-now">● Este mes</span>' : `<span class="cal-month-num">${String(m + 1).padStart(2, "0")}</span>`}
                 </div>`;
             html += list.length
-                ? list.map(e => `<div class="cal-entry">
+                ? list.map(e => `<div class="cal-entry" data-pc data-pc-pid="${e.pid}" data-pc-email="${e.email}" data-pc-name="${e.name}">
                     <span class="cal-day">${e.day}</span>
                     <span class="cal-who"><strong>${e.name}</strong>${e.nick ? `<span class="cal-nick">@${e.nick}</span>` : ''}</span>
                     <span class="cal-fav" title="${e.fav || ''}">${e.fav ? pokeImg(e.fav, 26) : '🎂'}</span></div>`).join("")
@@ -2226,6 +2298,63 @@
         } else {
             grid.innerHTML = html;
         }
+    }
+
+    /* ============================================================
+       FICHA DE JUGADOR (popup con perfil + estadísticas por modo)
+    ============================================================ */
+    function openPlayerCard(ref) {
+        const norm = s => (s || "").trim().toLowerCase();
+        let prof = null;
+        if (ref.pid) prof = perfilesCache.find(p => p.id === ref.pid) || null;
+        if (!prof && ref.email) prof = perfilesCache.find(p => norm(p.email) === norm(ref.email)) || null;
+        if (!prof && ref.name) prof = perfilesCache.find(p => norm(p.name) === norm(ref.name)) || null;
+        const player = Object.values(jugadoresCache).find(p =>
+            (prof && p.profileId === prof.id) ||
+            (ref.pid && p.profileId === ref.pid) ||
+            (ref.email && norm(p.email) === norm(ref.email)) ||
+            (ref.name && norm(p.name) === norm(ref.name))) || null;
+        if (!prof && !player) { toast("Sin datos de este jugador"); return; }
+
+        const name = (prof && prof.name) || (player && player.name) || ref.name || "(sin nombre)";
+        const nick = (prof && prof.nick) || (player && player.nick) || "";
+        const avatar = (prof && prof.avatar != null) ? prof.avatar : (player ? player.avatar : null);
+        const fav = (prof && prof.favPokemon) || (player && player.favPokemon) || "";
+        const tops = ((prof && prof.topPokemons) || (player && player.topPokemons) || []).filter(Boolean);
+        const bday = (prof && prof.birthday) || (player && player.birthday) || "";
+        const decks = (player && player.decks) || [];
+
+        const entries = prof ? perfilEntries(prof) : [];
+        const sum = (list, k) => list.reduce((s, e) => s + (e[k] || 0), 0);
+        const best = list => { const m = Math.min(...list.map(e => e.posicion || 999)); return m === 999 ? "-" : "#" + m; };
+        const statBlock = (label, list) => list.length ? `
+            <div class="pm-stats-row"><span>${label}</span>
+                <span>${list.length} torneo${list.length !== 1 ? "s" : ""}</span>
+                <span>Mejor: <strong>${best(list)}</strong></span>
+                <span style="color:#a9e34b">${sum(list, "victorias")}V</span>
+                <span>${sum(list, "empates")}E</span>
+                <span style="color:#ff8787">${sum(list, "derrotas")}D</span>
+                <span style="color:var(--cyan); font-weight:700;">${sum(list, "puntos")} pts</span>
+            </div>` : "";
+        const e1 = entries.filter(e => entryMode(e) === 1);
+        const e3 = entries.filter(e => entryMode(e) !== 1);
+
+        $("pmBody").innerHTML = `
+            <div class="pm-head">
+                ${avatarImg(avatar, 74)}
+                <div style="min-width:0;">
+                    <div class="pm-name">${esc(name)}</div>
+                    ${nick ? `<div class="pm-nick">@${esc(nick)}</div>` : ""}
+                    ${bday ? `<div class="pm-meta">🎂 ${esc(bday)}</div>` : ""}
+                </div>
+            </div>
+            ${fav ? `<div class="pm-sec"><div class="roster-label">Pokémon favorito</div><div style="display:flex;align-items:center;gap:8px;">${pokeImg(fav, 30)} <strong>${esc(fav)}</strong></div></div>` : ""}
+            ${tops.length ? `<div class="pm-sec"><div class="roster-label">Equipo top-5</div><div style="display:flex;gap:8px;flex-wrap:wrap;">${tops.map(t => `<span title="${esc(t)}">${pokeImg(t, 34)}</span>`).join("")}</div></div>` : ""}
+            ${decks.length ? `<div class="pm-sec"><div class="roster-label">Decks en este torneo</div>${decks.map(d => `<div style="font-size:13px;display:flex;align-items:center;gap:6px;padding:2px 0;">${deckImg(d.name, 18)} ${esc(d.name)} <span class="tier-badge ${getTierClass(d.tier)}">${d.tier}</span></div>`).join("")}</div>` : ""}
+            <div class="pm-sec"><div class="roster-label">Historial por modo</div>
+                ${entries.length ? (statBlock("🃏 Normal", e1) + statBlock("🎴 3 Decks", e3)) : `<span style="font-size:13px;color:var(--text-muted);">Sin torneos finalizados aún.</span>`}
+            </div>`;
+        $("playerModal").classList.remove("hidden");
     }
 
     /* ============================================================
@@ -2242,7 +2371,7 @@
                 ? tops.map(t => `<span style="display:inline-flex;flex-direction:column;align-items:center;width:46px;">${pokeImg(t, 34)}<span style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46px;">${esc(t)}</span></span>`).join("")
                 : '<span style="font-size:12px;color:var(--text-muted);">—</span>';
             const decksHtml = (p.decks || []).map(d => `<div style="font-size:12px;display:flex;align-items:center;gap:6px;padding:2px 0;">${deckImg(d.name, 18)} <span>${esc(d.name)}</span> <span class="tier-badge ${getTierClass(d.tier)}">${d.tier}</span></div>`).join("");
-            return `<div class="roster-card">
+            return `<div class="roster-card" data-pc data-pc-pid="${p.profileId || ''}" data-pc-email="${p.email || ''}" data-pc-name="${p.name}">
                 <div class="roster-band"></div>
                 <div class="roster-head">
                     ${avatarImg(p.avatar, 68)}
@@ -2300,7 +2429,7 @@
         tbody.innerHTML = "";
         list.forEach(p => {
             tbody.innerHTML += `
-                <tr>
+                <tr data-pc data-pc-pid="${p.profileId || ''}" data-pc-email="${p.email || ''}" data-pc-name="${p.name}">
                     <td><span style="display:inline-flex;align-items:center;gap:6px;">${avatarImg(p.avatar, 24)} <strong>${p.name}</strong></span>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">Entró R${p.joinedRound}</span>` : ''}</td>
                     <td>${p.nick || '-'}</td>
                     <td>${(p.decks || []).map(d => `<span style="display:inline-flex; align-items:center; gap:4px; margin-right:10px; white-space:nowrap;">${deckImg(d.name, 18)} ${esc(d.name)} <span class="tier-badge ${getTierClass(d.tier)}">${d.tier}</span></span>`).join("")}</td>
@@ -2508,6 +2637,7 @@
             // Formulario editable si: puede reportar Y (no está completo, o es su
             // propia mesa, o el organizador activó "Editar Ronda").
             const editable = canReport && (!m.completed || isMine || showEditForms);
+            const maxG = deckCount() > 1 ? 3 : 2; // normal: Bo3/Bo1 (máx 2) · 3 decks: 3 juegos
 
             let actions;
             if (editable) {
@@ -2517,9 +2647,9 @@
                 actions = `<div class="report-form" style="width:100%;">
                      <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
                         <strong style="color:var(--accent-blue)">${p1.name}</strong>
-                        <input type="number" min="0" max="9" id="g1_${mid}" value="${g1v}" style="width:56px; text-align:center;">
+                        <input type="number" min="0" max="${maxG}" id="g1_${mid}" value="${g1v}" style="width:56px; text-align:center;">
                         <span style="font-weight:bold;">–</span>
-                        <input type="number" min="0" max="9" id="g2_${mid}" value="${g2v}" style="width:56px; text-align:center;">
+                        <input type="number" min="0" max="${maxG}" id="g2_${mid}" value="${g2v}" style="width:56px; text-align:center;">
                         <strong style="color:#fa5252">${p2.name}</strong>
                      </div>
                      ${deckCount() > 1 ? `<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
@@ -2590,7 +2720,7 @@
         }
         sorted.forEach((p, idx) => {
             tbody.innerHTML += `
-                <tr>
+                <tr data-pc data-pc-pid="${p.profileId || ''}" data-pc-email="${p.email || ''}" data-pc-name="${p.name}">
                     <td><strong>${idx + 1}</strong></td>
                     <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">R${p.joinedRound}</span>` : ''}</td>
                     <td style="color: var(--accent-yellow); font-weight: bold; font-size:15px;">${p.points}</td>
@@ -2611,9 +2741,31 @@
         return p.historial ? Object.values(p.historial) : [];
     }
 
+    // Modo de un registro de historial: usa e.modo (torneos nuevos) o lo infiere
+    // de la cantidad de decks (torneos guardados antes de esta versión).
+    function entryMode(e) { return e.modo != null ? Number(e.modo) : (((e.decks || []).length <= 1) ? 1 : 3); }
+
     function renderHistorial() {
+        // ---- Filtros (modo / torneo) ----
+        const fModeEl = $("histModeFilter"), fTorneoEl = $("histTorneoFilter");
+        const fMode = fModeEl ? fModeEl.value : "";
+        const fTorneo = fTorneoEl ? fTorneoEl.value : "";
+
+        // Poblar selector de torneos (conserva la selección actual)
+        if (fTorneoEl) {
+            const seen = {};
+            perfilesCache.forEach(p => perfilEntries(p).forEach(e => {
+                if (e.torneoId && !seen[e.torneoId]) seen[e.torneoId] = { id: e.torneoId, fecha: e.fecha || "", modo: entryMode(e) };
+            }));
+            const torneosList = Object.values(seen).sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "") || String(b.id).localeCompare(String(a.id)));
+            fTorneoEl.innerHTML = `<option value="">Todos los torneos</option>` +
+                torneosList.map(t => `<option value="${t.id}">${t.fecha || "?"} · ${t.modo === 1 ? "Normal" : "3 Decks"} · ${String(t.id).slice(-5)}</option>`).join("");
+            if (fTorneo && seen[fTorneo]) fTorneoEl.value = fTorneo;
+        }
+
+        const passFilter = (e) => (!fMode || entryMode(e) === Number(fMode)) && (!fTorneo || e.torneoId === fTorneo);
         const conHistorial = perfilesCache
-            .map(p => ({ p, entries: perfilEntries(p) }))
+            .map(p => ({ p, entries: perfilEntries(p).filter(passFilter) }))
             .filter(x => x.entries.length > 0);
 
         // KPIs globales
@@ -2647,7 +2799,7 @@
             tb.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Aún no hay torneos finalizados. El historial se guarda al pulsar "Finalizar torneo".</td></tr>`;
         } else {
             tb.innerHTML = rows.map(r => `
-                <tr>
+                <tr data-pc data-pc-pid="${r.id}">
                     <td><strong>${r.nombre}</strong><br><span style="font-size:12px;color:var(--text-muted)">${r.nick}</span></td>
                     <td>${r.torneos}</td>
                     <td><span class="tier-badge ${r.mejorPos === 1 ? 'tier-s' : 'tier-normal'}">${r.mejorPos === 999 ? '-' : '#' + r.mejorPos}</span></td>
@@ -3049,6 +3201,19 @@
         });
         $("historyPlayerSelect").addEventListener("change", renderHistoryDetail);
         $("btnExportCsv").addEventListener("click", exportHistorialCSV);
+        $("histModeFilter").addEventListener("change", renderHistorial);
+        $("histTorneoFilter").addEventListener("change", renderHistorial);
+
+        // Ficha de jugador: click en cualquier fila/tarjeta con data-pc
+        $("pmClose").addEventListener("click", () => $("playerModal").classList.add("hidden"));
+        $("playerModal").addEventListener("click", (e) => { if (e.target.id === "playerModal") $("playerModal").classList.add("hidden"); });
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("playerModal").classList.add("hidden"); });
+        document.addEventListener("click", (e) => {
+            const pc = e.target.closest("[data-pc]");
+            if (!pc) return;
+            if (e.target.closest("button") || e.target.closest("select") || e.target.closest("input") || e.target.closest("a")) return;
+            openPlayerCard({ pid: pc.dataset.pcPid || "", email: pc.dataset.pcEmail || "", name: pc.dataset.pcName || "" });
+        });
 
         document.body.addEventListener("click", (e) => {
             const drop = e.target.closest("[data-drop]");
