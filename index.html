@@ -782,6 +782,56 @@
         .pm-stats-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 13px; padding: 6px 0; }
         .pm-stats-row > span:first-child { font-family: var(--font-display); font-weight: 700; min-width: 88px; }
 
+        /* ===== Salón de la Fama ===== */
+        @keyframes goldPulse {
+            0%, 100% { box-shadow: 0 0 18px rgba(255, 215, 94, 0.35); border-color: rgba(255, 215, 94, 0.65); }
+            50% { box-shadow: 0 0 34px rgba(255, 215, 94, 0.6); border-color: rgba(255, 230, 150, 0.9); }
+        }
+        .fama-champ {
+            position: relative; text-align: center;
+            max-width: 520px; margin: 6px auto 26px;
+            padding: 26px 22px 22px;
+            background:
+                radial-gradient(ellipse 70% 60% at 50% 0%, rgba(255, 215, 94, 0.10), transparent 65%),
+                linear-gradient(180deg, #26262B 0%, #1D1D21 100%);
+            border: 2px solid rgba(255, 215, 94, 0.65);
+            border-radius: 14px;
+            animation: goldPulse 2.6s ease-in-out infinite;
+        }
+        .fama-crown { font-size: 40px; line-height: 1; margin-bottom: 6px; }
+        .fama-champ-name { font-family: var(--font-display); font-weight: 700; font-size: 26px; text-transform: uppercase; letter-spacing: 0.6px; color: #fff; margin-top: 8px; }
+        .fama-champ-sub { font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: 3px; color: #FFD75E; text-transform: uppercase; margin: 4px 0 12px; }
+        .fama-decks { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .fama-deck-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 16px; background: rgba(41, 171, 226, 0.10); border: 1px solid rgba(41, 171, 226, 0.3); color: var(--text-main); }
+        .fama-rest { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 920px; margin: 0 auto; }
+        .fama-card {
+            position: relative; text-align: center;
+            padding: 20px 14px 14px;
+            background: linear-gradient(180deg, #232327, #1C1C20);
+            border: 1px solid rgba(41, 171, 226, 0.2); border-radius: 12px;
+            transition: transform 0.22s ease, border-color 0.22s ease;
+        }
+        .fama-card:hover { transform: translateY(-3px); border-color: rgba(41, 171, 226, 0.5); }
+        .fama-pos {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-family: var(--font-display); font-weight: 700; font-size: 14px;
+            color: #1C1C1F; background: linear-gradient(135deg, #ECECEC, #9E9E9E);
+        }
+        .fama-pos.p3 { background: linear-gradient(135deg, #E8A05C, #8C5A2B); }
+        .fama-pos.pn { background: linear-gradient(135deg, #7CCFF5, #1E8CBE); }
+        .fama-card-name { font-family: var(--font-display); font-weight: 700; font-size: 16px; text-transform: uppercase; color: #fff; margin-top: 8px; }
+        .fama-card-decks { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+        .btn-poster {
+            border: 1px solid transparent;
+            background: linear-gradient(#1C1C1F, #1C1C1F) padding-box, var(--gradient-sig) border-box;
+            color: var(--text-main);
+        }
+        .btn-poster:hover:not(:disabled) {
+            transform: translateY(-2px); color: #fff;
+            box-shadow: 0 4px 16px rgba(41, 171, 226, 0.3), 0 4px 16px rgba(236, 0, 140, 0.2);
+        }
+
         /* ===== Responsive ===== */
         @media (max-width: 640px) {
             body { padding: 10px 10px 30px; }
@@ -861,6 +911,7 @@
         <button class="tab" data-tab="jugadores"><span class="tab-ico">🧑‍🤝‍🧑</span><span class="tab-txt">Jugadores<small>Roster</small></span></button>
         <button class="tab" data-tab="historial"><span class="tab-ico">📈</span><span class="tab-txt">Historial<small>Estadísticas</small></span></button>
         <button class="tab" data-tab="calendario"><span class="tab-ico">🎂</span><span class="tab-txt">Calendario<small>Cumpleaños</small></span></button>
+        <button class="tab" data-tab="fama"><span class="tab-ico">🏆</span><span class="tab-txt">Salón de la Fama<small>Campeones</small></span></button>
         <button class="tab" data-tab="reglas"><span class="tab-ico">📜</span><span class="tab-txt">Reglas<small>Torneo</small></span></button>
     </div>
 
@@ -1178,6 +1229,32 @@
         <div id="birthdayGrid" class="cal-grid"></div>
     </div>
 
+    <!-- PESTAÑA: SALÓN DE LA FAMA -->
+    <div id="fama" class="panel">
+        <div class="cal-hero">
+            <div class="eyebrow">🏆 Leyendas del club</div>
+            <div class="big-title">SALÓN <span>DE LA FAMA</span></div>
+            <p class="hero-sub">Los campeones de cada torneo, inmortalizados. Elige el torneo, define el top y descarga el afiche para compartir la gloria.</p>
+        </div>
+        <div id="famaControls" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:24px;">
+            <div class="form-group" style="margin:0; min-width:230px;">
+                <label for="famaTorneoSelect" style="font-size:12px;">Torneo:</label>
+                <select id="famaTorneoSelect"></select>
+            </div>
+            <div class="form-group" style="margin:0; min-width:130px;">
+                <label for="famaTopSelect" style="font-size:12px;">Mostrar:</label>
+                <select id="famaTopSelect">
+                    <option value="3">Top 3</option>
+                    <option value="4">Top 4</option>
+                    <option value="6">Top 6</option>
+                    <option value="8">Top 8</option>
+                </select>
+            </div>
+            <button id="btnPoster" class="btn-poster" style="margin-left:auto;">🖼️ Descargar afiche <span style="font-size:11px; color:var(--text-muted);">JPG · 1350×1920</span></button>
+        </div>
+        <div id="famaGrid"></div>
+    </div>
+
     <!-- PESTAÑA: REGLAS -->
     <div id="reglas" class="panel">
         <h2>📜 Reglas del Torneo</h2>
@@ -1462,6 +1539,7 @@
         if (tabId === "historial") renderHistorial();
         if (tabId === "calendario") renderBirthdays();
         if (tabId === "jugadores") renderRoster();
+        if (tabId === "fama") renderFama();
         if (tabId === "reglas") renderRules();
     }
 
@@ -2301,6 +2379,387 @@
     }
 
     /* ============================================================
+       SALÓN DE LA FAMA (podio + afiche descargable 1350×1920)
+    ============================================================ */
+    function famaTorneos() {
+        const seen = {};
+        perfilesCache.forEach(p => perfilEntries(p).forEach(e => {
+            if (e.torneoId && !seen[e.torneoId]) seen[e.torneoId] = { id: e.torneoId, fecha: e.fecha || "", modo: entryMode(e) };
+        }));
+        return Object.values(seen).sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "") || String(b.id).localeCompare(String(a.id)));
+    }
+
+    function famaData(tid, topN) {
+        const out = [];
+        perfilesCache.forEach(p => {
+            const e = perfilEntries(p).find(x => x.torneoId === tid);
+            if (!e || !e.posicion || e.posicion > topN) return;
+            out.push({
+                pos: e.posicion, puntos: e.puntos || 0, decks: e.decks || [],
+                name: p.name || "(sin nombre)", nick: p.nick || "", avatar: p.avatar,
+                fav: p.favPokemon || "", tops: (p.topPokemons || []).filter(Boolean), pid: p.id
+            });
+        });
+        return out.sort((a, b) => a.pos - b.pos);
+    }
+
+    function renderFama() {
+        const sel = $("famaTorneoSelect"), topSel = $("famaTopSelect"), grid = $("famaGrid");
+        if (!sel || !grid) return;
+        const torneos = famaTorneos();
+        const prev = sel.value;
+        sel.innerHTML = torneos.length
+            ? torneos.map(t => `<option value="${t.id}">${t.fecha || "?"} · ${t.modo === 1 ? "Normal" : "3 Decks"} · ${String(t.id).slice(-5)}</option>`).join("")
+            : `<option value="">— Sin torneos finalizados —</option>`;
+        if (prev && torneos.some(t => t.id === prev)) sel.value = prev;
+        const tid = sel.value;
+
+        // Top configurado por el organizador para este torneo (persistido en estado)
+        const saved = (estadoCache.famaTop || {})[tid];
+        if (saved && !topSel.dataset.touched) topSel.value = String(saved);
+        const topN = parseInt(topSel.value, 10) || 3;
+
+        if (!tid) {
+            grid.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Aún no hay torneos finalizados. Los campeones aparecerán aquí al pulsar "Finalizar torneo".</p>`;
+            return;
+        }
+        const w = famaData(tid, topN);
+        if (!w.length) {
+            grid.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Este torneo no tiene posiciones registradas en el historial.</p>`;
+            return;
+        }
+        const champ = w[0], rest = w.slice(1);
+        const chip = d => `<span class="fama-deck-chip">${deckImg(d, 16)} ${esc(d)}</span>`;
+        grid.innerHTML = `
+            <div class="fama-champ" data-pc data-pc-pid="${champ.pid}">
+                <div class="fama-crown">👑</div>
+                ${avatarImg(champ.avatar, 110)}
+                <div class="fama-champ-name">${esc(champ.name)}</div>
+                ${champ.nick ? `<div class="pm-nick">@${esc(champ.nick)}</div>` : ""}
+                <div class="fama-champ-sub">★ Campeón · ${champ.puntos} pts ★</div>
+                <div class="fama-decks">${champ.decks.map(chip).join("")}</div>
+            </div>
+            ${rest.length ? `<div class="fama-rest">${rest.map(r => `
+                <div class="fama-card" data-pc data-pc-pid="${r.pid}">
+                    <span class="fama-pos ${r.pos === 3 ? "p3" : (r.pos === 2 ? "" : "pn")}">${r.pos}</span>
+                    ${avatarImg(r.avatar, 66)}
+                    <div class="fama-card-name">${esc(r.name)}</div>
+                    ${r.nick ? `<div class="pm-nick" style="font-size:11px;">@${esc(r.nick)}</div>` : ""}
+                    <div class="fama-card-decks">${r.decks.map(esc).join(" · ")}</div>
+                </div>`).join("")}</div>` : ""}`;
+    }
+
+    /* ---- Afiche JPG 1350×1920 ---- */
+    function cargarImg(url) {
+        return new Promise(res => {
+            if (!url) return res(null);
+            const im = new Image();
+            im.crossOrigin = "anonymous";
+            im.onload = () => res(im);
+            im.onerror = () => res(null);
+            im.src = url;
+        });
+    }
+    async function imgPokeNum(n) {
+        if (!n) return null;
+        return (await cargarImg(POKE_ICON_BASE + "/images/" + n + ".png"))
+            || (await cargarImg(POKE_ICON_BASE + "/images2/" + n + ".png"));
+    }
+    function drawImgHQ(ctx, img, x, y, w2, h2) {
+        // Al reducir mucho una imagen de golpe, canvas la "pixelea". Reducimos
+        // a mitades sucesivas para conservar la nitidez de los avatares.
+        let sw = img.width || w2, sh = img.height || h2;
+        if (!img.width || sw <= w2 * 2.5) { ctx.drawImage(img, x, y, w2, h2); return; }
+        let cur = img;
+        while (sw / 2 > w2 * 2) {
+            const c = document.createElement("canvas");
+            c.width = Math.max(1, Math.floor(sw / 2));
+            c.height = Math.max(1, Math.floor(sh / 2));
+            const cx2 = c.getContext("2d");
+            cx2.imageSmoothingQuality = "high";
+            cx2.drawImage(cur, 0, 0, c.width, c.height);
+            cur = c; sw = c.width; sh = c.height;
+        }
+        ctx.drawImage(cur, x, y, w2, h2);
+    }
+
+    function silueta(img, color) {
+        const c = document.createElement("canvas");
+        c.width = img.width; c.height = img.height;
+        const x = c.getContext("2d");
+        x.drawImage(img, 0, 0);
+        x.globalCompositeOperation = "source-in";
+        x.fillStyle = color; x.fillRect(0, 0, c.width, c.height);
+        return c;
+    }
+    function roundRectPath(ctx, x, y, w2, h2, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w2, y, x + w2, y + h2, r);
+        ctx.arcTo(x + w2, y + h2, x, y + h2, r);
+        ctx.arcTo(x, y + h2, x, y, r);
+        ctx.arcTo(x, y, x + w2, y, r);
+        ctx.closePath();
+    }
+    function ajustaTexto(ctx, txt, maxW) {
+        let t = txt || "";
+        if (ctx.measureText(t).width <= maxW) return t;
+        while (t.length > 1 && ctx.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+        return t + "…";
+    }
+
+    const FRASES_CAMPEON = [
+        "De la hierba alta… a la cima del mundo.",
+        "¡Se escribió una nueva leyenda en la Arena!",
+        "El corazón de un campeón nunca se rinde.",
+        "La victoria eligió a su maestro.",
+        "Entrenador, tu nombre ya brilla en la historia."
+    ];
+
+    async function generarAfiche() {
+        const tid = $("famaTorneoSelect").value;
+        const topN = parseInt($("famaTopSelect").value, 10) || 3;
+        if (!tid) { toast("No hay torneo finalizado que mostrar"); return; }
+        const w = famaData(tid, topN);
+        if (!w.length) { toast("Este torneo no tiene posiciones registradas"); return; }
+        const tInfo = famaTorneos().find(t => t.id === tid) || { fecha: "", modo: 3 };
+        toast("🎨 Generando afiche…");
+        const btn = $("btnPoster"); if (btn) btn.disabled = true;
+        try {
+            if (document.fonts && document.fonts.ready) await document.fonts.ready;
+            // Composición en 1350×1920, exportada al doble (2700×3840) para que
+            // el afiche aguante zoom y no se pixele al compartirlo.
+            const W = 1350, H = 1920, SCALE = 2;
+            const cv = document.createElement("canvas"); cv.width = W * SCALE; cv.height = H * SCALE;
+            const ctx = cv.getContext("2d");
+            ctx.scale(SCALE, SCALE);
+            ctx.imageSmoothingQuality = "high";
+
+            const champ = w[0], rest = w.slice(1);
+            const dense = rest.length > 3; // top 6/8: composición compacta para dar aire a las tarjetas
+
+            // ---- Carga de imágenes ----
+            const champAvatar = champ.avatar ? await cargarImg(trainerUrl(champ.avatar)) : null;
+            const champFav = await imgPokeNum(pokeNum(champ.fav));
+            const sombras = [];
+            for (const t of champ.tops.slice(0, 5)) { const im = await imgPokeNum(pokeNum(t)); if (im) sombras.push(im); }
+            const champDeckImgs = [];
+            for (const d of champ.decks) champDeckImgs.push({ name: d, img: await imgPokeNum(pokeNumInText(d)) });
+            for (const r of rest) {
+                r.img = r.avatar ? await cargarImg(trainerUrl(r.avatar)) : null;
+                r.favImg = await imgPokeNum(pokeNum(r.fav));
+            }
+
+            // ---- Fondo ----
+            const sky = ctx.createLinearGradient(0, 0, 0, H);
+            sky.addColorStop(0, "#101014"); sky.addColorStop(0.45, "#15151B"); sky.addColorStop(1, "#0E0E12");
+            ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+            const glow = (x, y, r, color) => {
+                const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+                g.addColorStop(0, color); g.addColorStop(1, "rgba(0,0,0,0)");
+                ctx.fillStyle = g; ctx.fillRect(Math.max(0, x - r), Math.max(0, y - r), r * 2, r * 2);
+            };
+            glow(220, 280, 520, "rgba(41,171,226,0.16)");
+            glow(1140, 340, 540, "rgba(236,0,140,0.14)");
+            ctx.strokeStyle = "rgba(41,171,226,0.05)"; ctx.lineWidth = 1;
+            for (let x = 0; x <= W; x += 45) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+            for (let y = 0; y <= H; y += 45) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+            const center = (txt, y, font, fill, spacing, shadow) => {
+                ctx.save();
+                ctx.font = font; ctx.textAlign = "center";
+                try { ctx.letterSpacing = (spacing || 0) + "px"; } catch (_) { }
+                if (shadow) { ctx.shadowColor = shadow; ctx.shadowBlur = 30; }
+                ctx.fillStyle = fill; ctx.fillText(txt, W / 2, y);
+                ctx.restore();
+            };
+
+            // ---- Título ----
+            center("LIGA POKÉMON TCG PRESENTA", 152, "700 30px Rajdhani, sans-serif", "#EC008C", 10);
+            center("SALÓN DE LA", 252, "700 84px Rajdhani, sans-serif", "#F0F2F5", 4);
+            const gradT = ctx.createLinearGradient(W / 2 - 300, 0, W / 2 + 300, 0);
+            gradT.addColorStop(0, "#29ABE2"); gradT.addColorStop(1, "#EC008C");
+            center("FAMA", 392, "700 150px Rajdhani, sans-serif", gradT, 12, "rgba(41,171,226,0.55)");
+            center(`Torneo ${tInfo.modo === 1 ? "Normal (1 deck)" : "3 Decks"} · ${tInfo.fecha || ""}`, 448, "500 30px Inter, sans-serif", "#9BA8B8");
+            const lg = ctx.createLinearGradient(W / 2 - 260, 0, W / 2 + 260, 0);
+            lg.addColorStop(0, "#29ABE2"); lg.addColorStop(1, "#EC008C");
+            ctx.fillStyle = lg; ctx.fillRect(W / 2 - 260, 474, 520, 4);
+
+            const frase = FRASES_CAMPEON[(String(tid).length + (tInfo.fecha || "").length) % FRASES_CAMPEON.length];
+            center("« " + frase + " »", 545, "italic 600 34px Inter, sans-serif", "#FFD75E");
+
+            // ---- Campo de hierba ----
+            const horizon = 740, grassBottom = dense ? 1240 : 1300;
+            const gg = ctx.createLinearGradient(0, horizon, 0, grassBottom);
+            gg.addColorStop(0, "#16301F"); gg.addColorStop(0.5, "#1C3A26"); gg.addColorStop(1, "#122318");
+            ctx.fillStyle = gg;
+            ctx.beginPath();
+            ctx.ellipse(W / 2, (horizon + grassBottom) / 2 + 40, W * 0.80, (grassBottom - horizon) / 2 + 50, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            let seed = 7;
+            const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+            const tufo = (x, y, s, color) => {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(x - s, y);
+                ctx.lineTo(x - s * 0.6, y - s * 0.9);
+                ctx.lineTo(x - s * 0.35, y - s * 0.35);
+                ctx.lineTo(x, y - s * 1.25);
+                ctx.lineTo(x + s * 0.35, y - s * 0.35);
+                ctx.lineTo(x + s * 0.6, y - s * 0.9);
+                ctx.lineTo(x + s, y);
+                ctx.closePath();
+                ctx.fill();
+            };
+            for (let i = 0; i < 26; i++) tufo(160 + rnd() * (W - 320), horizon + 55 + rnd() * 85, 26 + rnd() * 22, "rgba(21,52,32,0.9)");
+
+            // Top-5 del campeón: sombras entre la hierba
+            const nS = sombras.length;
+            sombras.forEach((im, i) => {
+                const t = nS === 1 ? 0.5 : i / (nS - 1);
+                const sx = 220 + t * (W - 440) + (rnd() * 40 - 20);
+                const sy = horizon + 130 + Math.sin(t * Math.PI) * -28 + rnd() * 26;
+                const s = 130 + rnd() * 45;
+                const sil = silueta(im, "#0E2417");
+                ctx.save(); ctx.globalAlpha = 0.88;
+                ctx.drawImage(sil, sx - s / 2, sy - s, s, s);
+                ctx.restore();
+                tufo(sx - s * 0.3, sy + 8, 24, "rgba(24,60,37,0.95)");
+                tufo(sx + s * 0.3, sy + 4, 20, "rgba(24,60,37,0.95)");
+            });
+            for (let i = 0; i < 30; i++) tufo(120 + rnd() * (W - 240), horizon + 210 + rnd() * 150, 30 + rnd() * 26, "rgba(28,72,44,0.95)");
+
+            // ---- Campeón ----
+            const ax = W / 2 - 60, aw = 400, ah = 540, afoot = grassBottom - 32;
+            ctx.save();
+            ctx.shadowColor = "rgba(255,215,94,0.75)"; ctx.shadowBlur = 70;
+            if (champAvatar) drawImgHQ(ctx, champAvatar, ax - aw / 2, afoot - ah, aw, ah);
+            else { ctx.font = "400 280px serif"; ctx.textAlign = "center"; ctx.fillText("🧢", ax, afoot - 140); }
+            ctx.restore();
+            ctx.font = "400 90px serif"; ctx.textAlign = "center";
+            ctx.fillText("👑", ax, afoot - ah - 16);
+            if (champFav) {
+                ctx.save(); ctx.shadowColor = "rgba(41,171,226,0.6)"; ctx.shadowBlur = 40;
+                drawImgHQ(ctx, champFav, ax + aw / 2 - 6, afoot - 232, 230, 230);
+                ctx.restore();
+            }
+            for (let i = 0; i < 16; i++) tufo(ax - 270 + rnd() * 640, afoot + 12 + rnd() * 22, 26 + rnd() * 20, "rgba(18,46,28,0.95)");
+
+            // ---- Placa del campeón ----
+            const pY = dense ? { camp: 1302, name: 1372, nick: 1412, chips: 1436 } : { camp: 1362, name: 1434, nick: 1476, chips: 1502 };
+            center("★ C A M P E Ó N ★", pY.camp, "700 46px Rajdhani, sans-serif", "#FFD75E", 8, "rgba(255,215,94,0.5)");
+            let nfs = 72;
+            ctx.font = `700 ${nfs}px Rajdhani, sans-serif`;
+            while (nfs > 44 && ctx.measureText((champ.name || "").toUpperCase()).width > W - 180) { nfs -= 4; ctx.font = `700 ${nfs}px Rajdhani, sans-serif`; }
+            center(ajustaTexto(ctx, (champ.name || "").toUpperCase(), W - 160), pY.name, `700 ${nfs}px Rajdhani, sans-serif`, "#FFFFFF", 2);
+            if (champ.nick) center("@" + champ.nick, pY.nick, "600 30px Inter, sans-serif", "#29ABE2");
+
+            if (champDeckImgs.length) {
+                ctx.font = "600 26px Inter, sans-serif";
+                const pad = 18, ic = 34, gap = 24;
+                const widths = champDeckImgs.map(c => ic + 8 + ctx.measureText(c.name).width + pad * 2);
+                const totalW = widths.reduce((a, b) => a + b, 0) + gap * (champDeckImgs.length - 1);
+                let cx0 = W / 2 - totalW / 2;
+                const cy = pY.chips;
+                champDeckImgs.forEach((c, i) => {
+                    const cw = widths[i];
+                    ctx.fillStyle = "rgba(41,171,226,0.12)";
+                    ctx.strokeStyle = "rgba(41,171,226,0.45)"; ctx.lineWidth = 2;
+                    roundRectPath(ctx, cx0, cy, cw, 52, 26); ctx.fill(); ctx.stroke();
+                    if (c.img) ctx.drawImage(c.img, cx0 + pad - 4, cy + 9, ic, ic);
+                    ctx.fillStyle = "#F0F2F5"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+                    ctx.fillText(c.name, cx0 + pad + ic + 4, cy + 27);
+                    ctx.textBaseline = "alphabetic"; ctx.textAlign = "center";
+                    cx0 += cw + gap;
+                });
+            }
+
+            // ---- Resto del top ----
+            if (rest.length) {
+                center(`TOP ${topN} DEL TORNEO`, dense ? 1566 : 1622, "700 40px Rajdhani, sans-serif", "#29ABE2", 6);
+                const cols = rest.length <= 3 ? rest.length : 4;
+                const rows = Math.ceil(rest.length / cols);
+                const areaW = W - 120, gapC = 22, gapR = 16;
+                const cw = (areaW - gapC * (cols - 1)) / cols;
+                const areaTop = dense ? 1592 : 1648, areaBottom = 1830;
+                const chh = Math.min(164, (areaBottom - areaTop - (rows - 1) * gapR) / rows);
+                // Encoge la fuente hasta que el texto quepa; solo recorta como último recurso.
+                const fitFont = (txt, maxW, base, min, weight, fam) => {
+                    let s = base;
+                    ctx.font = `${weight} ${s}px ${fam}`;
+                    while (s > min && ctx.measureText(txt).width > maxW) { s -= 2; ctx.font = `${weight} ${s}px ${fam}`; }
+                    return ajustaTexto(ctx, txt, maxW);
+                };
+                rest.forEach((r, i) => {
+                    const row = Math.floor(i / cols);
+                    const idx = i - row * cols;
+                    const inRow = (row === rows - 1) ? (rest.length - row * cols) : cols;
+                    const rowW = inRow * cw + (inRow - 1) * gapC;
+                    const x = (W - rowW) / 2 + idx * (cw + gapC);
+                    const y = areaTop + row * (chh + gapR);
+                    ctx.fillStyle = "rgba(27,27,31,0.92)";
+                    ctx.strokeStyle = "rgba(41,171,226,0.35)"; ctx.lineWidth = 2;
+                    roundRectPath(ctx, x, y, cw, chh, 14); ctx.fill(); ctx.stroke();
+                    // Badge de posición en la esquina superior izquierda
+                    const br = 17;
+                    const bx = x + br + 9, by = y + br + 9;
+                    const bg = r.pos === 2 ? ["#ECECEC", "#9E9E9E"] : (r.pos === 3 ? ["#E8A05C", "#8C5A2B"] : ["#7CCFF5", "#1E8CBE"]);
+                    const g2 = ctx.createLinearGradient(bx - br, by - br, bx + br, by + br);
+                    g2.addColorStop(0, bg[0]); g2.addColorStop(1, bg[1]);
+                    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = "#1C1C1F"; ctx.font = "700 17px Rajdhani, sans-serif";
+                    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.fillText("#" + r.pos, bx, by + 1);
+                    ctx.textBaseline = "alphabetic";
+                    // Avatar en alta calidad
+                    const avh = chh - 14, avw = avh * 0.74;
+                    const axr = x + 44;
+                    if (r.img) drawImgHQ(ctx, r.img, axr, y + 7, avw, avh);
+                    // Pokémon favorito inmerso al pie del avatar (sin recuadro)
+                    if (r.favImg) {
+                        const fs = Math.min(52, chh * 0.44);
+                        drawImgHQ(ctx, r.favImg, x + 8, y + chh - fs - 6, fs, fs);
+                    }
+                    // Textos: posiciones relativas a la altura (nunca se montan)
+                    ctx.textAlign = "left";
+                    const nx = axr + avw + 12, nw = x + cw - nx - 12;
+                    ctx.fillStyle = "#F0F2F5";
+                    ctx.fillText(fitFont((r.name || "").toUpperCase(), nw, chh > 130 ? 30 : 24, 17, "700", "Rajdhani, sans-serif"), nx, y + chh * 0.34);
+                    if (r.nick) {
+                        ctx.fillStyle = "#29ABE2";
+                        ctx.fillText(fitFont("@" + r.nick, nw, chh > 130 ? 20 : 16, 12, "600", "Inter, sans-serif"), nx, y + chh * 0.58);
+                    }
+                    ctx.fillStyle = "#9BA8B8";
+                    ctx.fillText(fitFont((r.decks || []).join(" · "), nw, chh > 130 ? 18 : 15, 12, "500", "Inter, sans-serif"), nx, y + chh * 0.84);
+                    ctx.textAlign = "center";
+                });
+            }
+
+            // ---- Footer ----
+            const fg = ctx.createLinearGradient(0, 0, W, 0);
+            fg.addColorStop(0, "#29ABE2"); fg.addColorStop(1, "#EC008C");
+            ctx.fillStyle = fg; ctx.fillRect(0, 1846, W, 74);
+            center("¡HAZTE CON LA GLORIA, ENTRENADOR!", 1886, "700 34px Rajdhani, sans-serif", "#FFFFFF", 4);
+            center("Liga Pokémon TCG · Sistema Suizo · Salón de la Fama", 1912, "500 18px Inter, sans-serif", "rgba(255,255,255,0.85)");
+
+            // ---- Descargar ----
+            const blob = await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error("no se pudo crear el JPG")), "image/jpeg", 0.95));
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "salon_de_la_fama_" + (tInfo.fecha || tid) + ".jpg";
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+            toast("✅ Afiche descargado");
+        } catch (err) {
+            console.error(err);
+            alert("❌ No se pudo generar el afiche: " + err.message + "\n\nNota: funciona en la app publicada (GitHub Pages); abierta como archivo local el navegador bloquea las imágenes.");
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    /* ============================================================
        FICHA DE JUGADOR (popup con perfil + estadísticas por modo)
     ============================================================ */
     function openPlayerCard(ref) {
@@ -3129,6 +3588,7 @@
             snap.forEach(d => { arr.push({ id: d.id, ...d.data() }); });
             perfilesCache = arr;
             renderHistorial();
+            renderFama();
         }, (err) => console.error("perfiles listener:", err));
     }
 
@@ -3203,6 +3663,22 @@
         $("btnExportCsv").addEventListener("click", exportHistorialCSV);
         $("histModeFilter").addEventListener("change", renderHistorial);
         $("histTorneoFilter").addEventListener("change", renderHistorial);
+
+        // Salón de la Fama
+        $("famaTorneoSelect").addEventListener("change", () => { delete $("famaTopSelect").dataset.touched; renderFama(); });
+        $("famaTopSelect").addEventListener("change", async () => {
+            $("famaTopSelect").dataset.touched = "1";
+            renderFama();
+            // El organizador persiste el top configurado para este torneo
+            const tid = $("famaTorneoSelect").value;
+            if (isAdmin && tid) {
+                try {
+                    await setDoc(ESTADO_REF, { famaTop: { [tid]: parseInt($("famaTopSelect").value, 10) } }, { merge: true });
+                    toast("Top del Salón guardado para este torneo");
+                } catch (e) { console.warn("famaTop:", e.message); }
+            }
+        });
+        $("btnPoster").addEventListener("click", generarAfiche);
 
         // Ficha de jugador: click en cualquier fila/tarjeta con data-pc
         $("pmClose").addEventListener("click", () => $("playerModal").classList.add("hidden"));
