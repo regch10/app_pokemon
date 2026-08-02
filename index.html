@@ -1775,10 +1775,23 @@
 
     async function dropPlayer(id) {
         if (!isAdmin) return;
-        if (confirm("¿Retirar (Drop) a este jugador? Ya no será emparejado.")) {
+        if (confirm("¿Retirar (Drop) a este jugador? Ya no será emparejado.\n\nSi te equivocas podrás reintegrarlo desde esta misma tabla.")) {
             try { await updateDoc(doc(JUGADORES_COL, id), { active: false }); }
             catch (e) { alert("❌ Error: " + e.message); }
         }
+    }
+
+    async function undropPlayer(id) {
+        if (!isAdmin) return;
+        const p = jugadoresCache[id];
+        if (!confirm(`¿Reintegrar a ${p ? p.name : "este jugador"} al torneo?\n\nVolverá a ser emparejado en las siguientes rondas.`)) return;
+        try {
+            await updateDoc(doc(JUGADORES_COL, id), { active: true });
+            toast("↩️ Jugador reintegrado");
+            if (estadoCache.currentRoundNumber > 0 && !estadoCache.isFinished) {
+                toast("💡 Si la ronda actual no se ha jugado, usa \"🔄 Regenerar Ronda\" para incluirlo ya");
+            }
+        } catch (e) { alert("❌ Error: " + e.message); }
     }
 
     /* ============================================================
@@ -2893,7 +2906,9 @@
                     <td>${p.nick || '-'}</td>
                     <td>${(p.decks || []).map(d => `<span style="display:inline-flex; align-items:center; gap:4px; margin-right:10px; white-space:nowrap;">${deckImg(d.name, 18)} ${esc(d.name)} <span class="tier-badge ${getTierClass(d.tier)}">${d.tier}</span></span>`).join("")}</td>
                     <td style="color:${p.active ? 'var(--success-color)' : 'var(--danger)'}">${p.active ? 'Activo' : 'Drop'}</td>
-                    ${isAdmin ? `<td>${p.active ? `<button class="btn-danger" style="padding:4px 8px; font-size:12px;" data-drop="${p.id}">Drop</button>` : '-'}</td>` : ''}
+                    ${isAdmin ? `<td>${p.active
+                        ? `<button class="btn-danger" style="padding:4px 8px; font-size:12px;" data-drop="${p.id}">Drop</button>`
+                        : `<button class="btn-success" style="padding:4px 8px; font-size:12px;" data-undrop="${p.id}">↩️ Reintegrar</button>`}</td>` : ''}
                 </tr>`;
         });
         $("countDisplay").innerText = list.length;
@@ -3694,6 +3709,8 @@
         document.body.addEventListener("click", (e) => {
             const drop = e.target.closest("[data-drop]");
             if (drop) { dropPlayer(drop.dataset.drop); return; }
+            const undrop = e.target.closest("[data-undrop]");
+            if (undrop) { undropPlayer(undrop.dataset.undrop); return; }
             const rep = e.target.closest("[data-report]");
             if (rep) { reportMatch(rep.dataset.report, rep.dataset.result); return; }
             const save = e.target.closest("[data-savereport]");
