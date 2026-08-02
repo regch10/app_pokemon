@@ -1806,21 +1806,59 @@
         return a;
     }
 
-    function findPairings(candidates) {
+    // Emparejador ESTRICTO: solo acepta soluciones sin rivales repetidos.
+    function findPairingsStrict(candidates) {
         if (candidates.length === 0) return [];
         const p1 = candidates[0];
         const rest = candidates.slice(1);
         for (let i = 0; i < rest.length; i++) {
             if (!p1.history.includes(rest[i].id)) {
-                const sub = findPairings(rest.filter((_, idx) => idx !== i));
+                const sub = findPairingsStrict(rest.filter((_, idx) => idx !== i));
+                if (sub !== null) return [{ p1, p2: rest[i] }, ...sub];
+            }
+        }
+        return null;
+    }
+    // Permisivo: permite repetir rival, SOLO se usa cuando no hay alternativa.
+    function findPairingsLoose(candidates) {
+        if (candidates.length === 0) return [];
+        const p1 = candidates[0];
+        const rest = candidates.slice(1);
+        for (let i = 0; i < rest.length; i++) {
+            if (!p1.history.includes(rest[i].id)) {
+                const sub = findPairingsLoose(rest.filter((_, idx) => idx !== i));
                 if (sub !== null) return [{ p1, p2: rest[i] }, ...sub];
             }
         }
         for (let i = 0; i < rest.length; i++) {
-            const sub = findPairings(rest.filter((_, idx) => idx !== i));
+            const sub = findPairingsLoose(rest.filter((_, idx) => idx !== i));
             if (sub !== null) return [{ p1, p2: rest[i] }, ...sub];
         }
         return null;
+    }
+    function findPairings(candidates) {
+        const s = findPairingsStrict(candidates);
+        if (s) return s;
+        toast("⚠️ No hay combinación sin repetir rivales: alguna mesa repite cruce");
+        return findPairingsLoose(candidates);
+    }
+    // Con jugadores impares: prueba candidatos a BYE (de abajo hacia arriba,
+    // primero quienes no han recibido BYE) y elige el primero que permita
+    // emparejar al resto SIN repetir rivales. Antes el BYE se fijaba a ciegas
+    // y podía forzar cruces repetidos (bug del reintegro).
+    function elegirByeYParejas(pool) {
+        if (pool.length % 2 === 0) return { bye: null, pairs: findPairings(pool) || [] };
+        const orden = [];
+        for (let i = pool.length - 1; i >= 0; i--) if (!pool[i].hadBye) orden.push(i);
+        for (let i = pool.length - 1; i >= 0; i--) if (pool[i].hadBye) orden.push(i);
+        for (const idx of orden) {
+            const resto = pool.filter((_, j) => j !== idx);
+            const strict = findPairingsStrict(resto);
+            if (strict) return { bye: pool[idx], pairs: strict };
+        }
+        const idx = orden.length ? orden[0] : pool.length - 1;
+        const resto = pool.filter((_, j) => j !== idx);
+        return { bye: pool[idx], pairs: findPairings(resto) || [] };
     }
 
     async function createNewRound() {
@@ -1853,21 +1891,18 @@
         const roundNumber = estadoCache.currentRoundNumber + 1;
         const roundMatches = [];
 
-        // BYE para impares
-        if (pool.length % 2 !== 0) {
-            let byeIndex = pool.length - 1;
-            while (byeIndex >= 0 && pool[byeIndex].hadBye) byeIndex--;
-            if (byeIndex < 0) byeIndex = pool.length - 1;
-            const bp = pool.splice(byeIndex, 1)[0];
+        // BYE + parejas eligiendo el BYE que evite rivales repetidos
+        const { bye, pairs } = elegirByeYParejas(pool);
+        if (bye) {
             roundMatches.push({
                 matchId: uid(), roundNumber,
-                p1Id: bp.id, p2Id: null,
-                p1OwnerUid: bp.ownerUid || null, p2OwnerUid: null,
+                p1Id: bye.id, p2Id: null,
+                p1OwnerUid: bye.ownerUid || null, p2OwnerUid: null,
                 p1DeckOrder: [], p2DeckOrder: [], completed: true, winner: "p1"
             });
         }
 
-        (findPairings(pool) || []).forEach(({ p1, p2 }) => {
+        pairs.forEach(({ p1, p2 }) => {
             roundMatches.push({
                 matchId: uid(), roundNumber,
                 p1Id: p1.id, p2Id: p2.id,
@@ -1918,18 +1953,15 @@
 
         let pool = [...active];
         const roundMatches = [];
-        if (pool.length % 2 !== 0) {
-            let byeIndex = pool.length - 1;
-            while (byeIndex >= 0 && pool[byeIndex].hadBye) byeIndex--;
-            if (byeIndex < 0) byeIndex = pool.length - 1;
-            const bp = pool.splice(byeIndex, 1)[0];
+        const { bye, pairs } = elegirByeYParejas(pool);
+        if (bye) {
             roundMatches.push({
-                matchId: uid(), roundNumber, p1Id: bp.id, p2Id: null,
-                p1OwnerUid: bp.ownerUid || null, p2OwnerUid: null,
+                matchId: uid(), roundNumber, p1Id: bye.id, p2Id: null,
+                p1OwnerUid: bye.ownerUid || null, p2OwnerUid: null,
                 p1DeckOrder: [], p2DeckOrder: [], completed: true, winner: "p1"
             });
         }
-        (findPairings(pool) || []).forEach(({ p1, p2 }) => {
+        pairs.forEach(({ p1, p2 }) => {
             roundMatches.push({
                 matchId: uid(), roundNumber, p1Id: p1.id, p2Id: p2.id,
                 p1OwnerUid: p1.ownerUid || null, p2OwnerUid: p2.ownerUid || null,
