@@ -1333,7 +1333,8 @@
     let currentUser = null;
     let isAdmin     = false;
 
-    let estadoCache    = { currentRoundNumber: 0, maxRounds: 0, isFinished: false, torneoId: null };
+    const ESTADO_DEFAULT = { currentRoundNumber: 0, maxRounds: 0, isFinished: false, torneoId: null, deckMode: 3 };
+    let estadoCache    = { ...ESTADO_DEFAULT };
     let adminCache     = { adminUids: [] };
     let jugadoresCache = {};   // { id: {..} }
     let matchesCache   = [];   // [ {id, matchId, roundNumber, ...} ]  (collectionGroup)
@@ -2127,13 +2128,14 @@
             (await getDocs(JUGADORES_COL)).forEach(d => batch.delete(d.ref));
             batch.set(ESTADO_REF, {
                 currentRoundNumber: 0, maxRounds: 0, isFinished: false,
+                deckMode: deckCount(),          // conserva el tipo de torneo (antes se perdía)
                 torneoId: "T" + Date.now(), createdAt: serverTimestamp()
             });
             await batch.commit();
 
             localStorage.removeItem(LS_PLAYER);
             myPlayerId = null;
-            toast("✅ Nuevo torneo iniciado");
+            toast("✅ Nuevo torneo iniciado · " + (deckCount() === 1 ? "1 deck" : "3 decks"));
             changeTab("registro", document.querySelector('.tab[data-tab="registro"]'));
         } catch (e) {
             console.error(e);
@@ -2227,6 +2229,10 @@
         if (t) t.textContent = dc === 1 ? "Tu deck para este torneo" : "Tus 3 decks para este torneo";
         const ex = $("extraDecks");
         if (ex) ex.style.display = dc === 1 ? "none" : "block";
+        const d1 = $("deck1Name");
+        if (d1) d1.placeholder = dc === 1 ? "Tu deck" : "Mazo 1";
+        // En modo 1 deck, los mazos 2 y 3 no deben quedar con texto residual
+        if (dc === 1) { ["deck2Name", "deck3Name"].forEach(id => { const el = $(id); if (el) el.value = ""; }); }
     }
 
     // Pestaña Reglas: formato y mecánica según el tipo de torneo (1 o 3 decks).
@@ -3443,6 +3449,7 @@
     function renderAll() {
         computeMyPlayer();
         buildDerived();
+        updateDeckInputs();   // 1 o 3 casillas según el tipo de torneo vigente
         renderPlayers();
         renderMatches();
         renderStandings();
@@ -3606,7 +3613,7 @@
         }, (err) => console.warn("config listener:", err.message));
 
         onSnapshot(ESTADO_REF, (snap) => {
-            if (snap.exists()) estadoCache = { ...estadoCache, ...snap.data() };
+            if (snap.exists()) estadoCache = { ...ESTADO_DEFAULT, ...snap.data() };
             $("connBadge").className = "conn-badge conn-ok";
             $("connBadge").textContent = "● En línea";
             renderAll();
