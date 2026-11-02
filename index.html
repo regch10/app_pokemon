@@ -877,7 +877,7 @@
     <header>
         <div class="logo-section">
             <h1>🏆 Pokémon TCG: <span class="title-accent">Torneo 3 Decks</span></h1>
-            <p>Sistema Suizo Oficial (Buchholz) <span class="sub-pill">⚡ Tiempo real</span></p>
+            <p>Sistema Suizo (Play! Pokémon + Buchholz) <span class="sub-pill">⚡ Tiempo real</span></p>
         </div>
         <div class="actions-header">
             <span id="roleBadge" class="role-badge role-player">👤 Jugador</span>
@@ -918,7 +918,7 @@
     <!-- PESTAÑA: REGISTRO -->
     <div id="registro" class="panel active">
         <div class="hero-banner">
-            <div class="eyebrow">⚡ Liga Pokémon TCG · Suizo oficial · Buchholz</div>
+            <div class="eyebrow">⚡ Liga Pokémon TCG · Suizo · Play! Pokémon + Buchholz</div>
             <div class="big-title">ENTRA A LA <span>ARENA</span></div>
             <p class="hero-sub">Registra tus 3 decks, domina tus emparejamientos y conquista la tabla de posiciones.</p>
         </div>
@@ -1132,13 +1132,15 @@
     <div id="posiciones" class="panel">
         <h2>Clasificación Oficial (Standings)</h2>
         <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">
-            <strong>Desempates:</strong> 1º Puntos (V=3, E=1), 2º Buchholz (Suma de puntos de oponentes enfrentados), 3º Victorias directas.
+            <strong>Desempates:</strong> 1º Puntos (V=3, E=1), 2º OWP (% de victorias de tus oponentes), 3º OOWP (% de victorias de los oponentes de tus oponentes), 4º Enfrentamiento directo (solo empate exacto de 2 jugadores), 5º Buchholz (suma de puntos de oponentes enfrentados), 6º Sorteo.
         </p>
         <table id="standingsTable">
             <thead>
                 <tr>
                     <th>Pos</th><th>Jugador</th><th>Puntos</th>
                     <th title="Suma de los puntos de los oponentes a los que se enfrentó">Buchholz ℹ️</th>
+                    <th title="Promedio del % de victorias de tus oponentes (mín. 25% por oponente; el BYE no cuenta)">OWP ℹ️</th>
+                    <th title="Promedio del OWP de tus oponentes">OOWP ℹ️</th>
                     <th>PG</th><th>PE</th><th>PP</th><th>Condición</th>
                 </tr>
             </thead>
@@ -1271,7 +1273,16 @@
             <h3>Puntuación y Desempates</h3>
             <ul>
                 <li><strong>Victoria:</strong> 3 Puntos · <strong>Empate:</strong> 1 Punto · <strong>Derrota:</strong> 0 Puntos.</li>
-                <li><strong>Buchholz:</strong> suma de los puntos finales de los oponentes enfrentados.</li>
+                <li><strong>Desempates</strong> (Play! Pokémon Tournament Rules Handbook + Buchholz de la liga):
+                    <ol>
+                        <li><strong>OWP</strong> (Opponents' Win %): promedio del % de victorias de cada oponente enfrentado.</li>
+                        <li><strong>OOWP</strong> (Opponents' Opponents' Win %): promedio del OWP de cada oponente.</li>
+                        <li><strong>Enfrentamiento directo:</strong> solo si empatan exactamente 2 jugadores y se enfrentaron; gana quien ganó esa partida.</li>
+                        <li><strong>Buchholz:</strong> suma de los puntos finales de los oponentes enfrentados (el BYE aporta el promedio de puntos de los activos).</li>
+                        <li><strong>Sorteo</strong> solo si también empatan en Buchholz.</li>
+                    </ol>
+                </li>
+                <li><strong>% de victorias:</strong> (V + ½·E) ÷ rondas jugadas. El BYE no cuenta como victoria ni como ronda. Mínimo 25%; máximo 75% para jugadores con Drop.</li>
             </ul>
         </div>
     </div>
@@ -1472,7 +1483,8 @@
     function buildDerived(upToRoundExclusive) {
         const players = Object.values(jugadoresCache).map(p => ({
             ...p, points: 0, wins: 0, ties: 0, losses: 0,
-            buchholz: 0, hadBye: false, history: []
+            buchholz: 0, hadBye: false, history: [],
+            recW: 0, recT: 0, recL: 0, h2h: {}, owp: 0, oowp: 0
         }));
         const byId = Object.fromEntries(players.map(p => [p.id, p]));
 
@@ -1489,9 +1501,9 @@
                     p1.history.push(p2.id);
                     p2.history.push(p1.id);
                     if (m.completed) {
-                        if (m.winner === "p1") { p1.points += 3; p1.wins++; p2.losses++; }
-                        else if (m.winner === "p2") { p2.points += 3; p2.wins++; p1.losses++; }
-                        else if (m.winner === "tie") { p1.points += 1; p2.points += 1; p1.ties++; p2.ties++; }
+                        if (m.winner === "p1") { p1.points += 3; p1.wins++; p2.losses++; p1.recW++; p2.recL++; p1.h2h[p2.id] = "W"; p2.h2h[p1.id] = "L"; }
+                        else if (m.winner === "p2") { p2.points += 3; p2.wins++; p1.losses++; p2.recW++; p1.recL++; p2.h2h[p1.id] = "W"; p1.h2h[p2.id] = "L"; }
+                        else if (m.winner === "tie") { p1.points += 1; p2.points += 1; p1.ties++; p2.ties++; p1.recT++; p2.recT++; p1.h2h[p2.id] = "T"; p2.h2h[p1.id] = "T"; }
                     }
                 }
             });
@@ -1500,7 +1512,7 @@
         // Jugadores que entraron tarde: 1 derrota (0 pts) por cada ronda perdida.
         players.forEach(p => {
             const missed = (p.joinedRound && p.joinedRound > 1) ? (p.joinedRound - 1) : 0;
-            if (missed > 0) p.losses += missed;
+            if (missed > 0) { p.losses += missed; p.recL += missed; }
         });
 
         const active = players.filter(p => p.active);
@@ -1514,18 +1526,63 @@
             p.buchholz = Math.round(p.buchholz * 100) / 100;
         });
 
+        /* --- Desempates oficiales Play! Pokémon (Tournament Rules Handbook) ---
+           Win% propio: (V + 0.5·E) / rondas jugadas. El BYE NO cuenta (ni como
+           victoria ni como ronda). Mínimo 25%; máximo 100% (75% si hizo Drop). */
+        const winPct = p => {
+            const rounds = p.recW + p.recT + p.recL;
+            let w = rounds ? (p.recW + 0.5 * p.recT) / rounds : 0;
+            w = Math.max(0.25, w);
+            return Math.min(p.active ? 1 : 0.75, w);
+        };
+        const avgOf = (ids, fn) => ids.length ? ids.reduce((s, id) => s + fn(byId[id]), 0) / ids.length : 0;
+        const realOpps = p => p.history.filter(op => op !== "BYE" && byId[op]);
+        players.forEach(p => { p._wp = winPct(p); });
+        players.forEach(p => { p.owp = avgOf(realOpps(p), o => o._wp); });          // 1º desempate
+        players.forEach(p => { p.oowp = avgOf(realOpps(p), o => o.owp); });         // 2º desempate
+        players.forEach(p => {
+            p.owp = Math.round(p.owp * 1e6) / 1e6;
+            p.oowp = Math.round(p.oowp * 1e6) / 1e6;
+            delete p._wp;
+        });
+
         const result = { players, byId };
         if (upToRoundExclusive == null) derived = result;   // no pisar el estado global en cálculos auxiliares
         return result;
     }
 
-    function sortStandings(arr) {
-        return [...arr].sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
-            return b.wins - a.wins;
-        });
+    /* Orden oficial Play! Pokémon:
+       1º Puntos (V=3, E=1, D=0)
+       2º Opponents' Win % (OWP)
+       3º Opponents' Opponents' Win % (OOWP)
+       4º Enfrentamiento directo: SOLO si empatan exactamente 2 jugadores y
+          se enfrentaron con un ganador.
+       5º Buchholz (suma de puntos de los oponentes) — criterio de la liga
+       6º Aleatorio (sorteo con semilla fija por torneo: no cambia entre recargas). */
+    function seededRand(key) {
+        let h = 2166136261;
+        for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+        return (h >>> 0) / 4294967296;
     }
+    function sortStandings(arr) {
+        const seed = String(estadoCache.torneoId || "t");
+        const base = [...arr].sort((a, b) =>
+            (b.points - a.points) || (b.owp - a.owp) || (b.oowp - a.oowp) || (b.buchholz - a.buchholz) ||
+            (seededRand(seed + "|" + a.id) - seededRand(seed + "|" + b.id)));
+        // Enfrentamiento directo solo en empates exactos de 2 jugadores
+        for (let i = 0; i < base.length; ) {
+            let j = i + 1;
+            while (j < base.length && base[j].points === base[i].points &&
+                   base[j].owp === base[i].owp && base[j].oowp === base[i].oowp) j++;
+            if (j - i === 2) {
+                const a = base[i], b = base[i + 1];
+                if (a.h2h && a.h2h[b.id] === "L") { base[i] = b; base[i + 1] = a; }
+            }
+            i = j;
+        }
+        return base;
+    }
+    const fmtPct = v => (v * 100).toFixed(2) + "%";
 
     /* ============================================================
        PESTAÑAS
@@ -2092,7 +2149,7 @@
                     fecha: new Date().toISOString().slice(0, 10),
                     modo: deckCount(),
                     posicion: idx + 1,
-                    puntos: p.points, buchholz: p.buchholz,
+                    puntos: p.points, buchholz: p.buchholz, owp: p.owp, oowp: p.oowp,
                     victorias: p.wins, empates: p.ties, derrotas: p.losses,
                     decks: (p.decks || []).map(d => d.name),
                     activo: p.active
@@ -3227,7 +3284,7 @@
         tbody.innerHTML = "";
         const sorted = sortStandings(players);
         if (sorted.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay competidores.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No hay competidores.</td></tr>`;
             return;
         }
         sorted.forEach((p, idx) => {
@@ -3237,6 +3294,8 @@
                     <td><strong>${p.name}</strong>${p.id === myPlayerId ? ' <span class="tier-badge tier-normal">Tú</span>' : ''}${p.joinedRound ? ` <span class="tier-badge tier-fun" title="Entró tarde con derrotas">R${p.joinedRound}</span>` : ''}</td>
                     <td style="color: var(--accent-yellow); font-weight: bold; font-size:15px;">${p.points}</td>
                     <td class="buchholz-col">${p.buchholz}</td>
+                    <td class="buchholz-col">${fmtPct(p.owp)}</td>
+                    <td class="buchholz-col">${fmtPct(p.oowp)}</td>
                     <td style="color:#a9e34b">${p.wins}</td>
                     <td>${p.ties}</td>
                     <td style="color:#ff8787">${p.losses}</td>
