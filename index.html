@@ -1295,6 +1295,19 @@
     </div>
 </div>
 
+<div id="confirmDeckModal" class="pm-overlay hidden">
+    <div class="pm-card">
+        <div class="pm-name" style="margin-bottom:6px;">⚠️ Confirma tu inscripción</div>
+        <p id="cdmIntro" style="color:var(--text-muted); font-size:13px; margin:0 0 12px;"></p>
+        <div id="cdmDecks" class="pm-sec"></div>
+        <p style="color:#ff8787; font-size:13px; font-weight:600; margin:10px 0 16px;">Una vez inscrito, NO podrás cambiar tu(s) deck(s) en este torneo.</p>
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+            <button class="btn-secondary" id="cdmCancel">✏️ Corregir</button>
+            <button class="btn-accent" id="cdmOk">✅ Sí, inscribirme</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script type="module">
@@ -1677,8 +1690,44 @@
         } catch (e) { console.error(e); }
     }
 
+    // Pop-up de confirmación de decks (devuelve true si confirma).
+    function confirmDecks(decks) {
+        return new Promise(resolve => {
+            const modal = $("confirmDeckModal");
+            const dc = decks.length;
+            $("cdmIntro").textContent = dc === 1
+                ? "¿Estás seguro de que jugarás este torneo con este deck?"
+                : "¿Estás seguro de que jugarás este torneo con estos 3 decks?";
+            $("cdmDecks").innerHTML = decks.map((d, i) => `
+                <div style="display:flex; align-items:center; gap:8px; padding:6px 0; font-size:14px;">
+                    ${dc > 1 ? `<span style="color:var(--text-muted); min-width:56px;">Deck ${i + 1}</span>` : ""}
+                    ${deckImg(d.name, 22)} <strong>${esc(d.name)}</strong>
+                    <span class="tier-badge ${getTierClass(d.tier)}">${esc(d.tier)}</span>
+                </div>`).join("");
+            const close = (val) => {
+                modal.classList.add("hidden");
+                $("cdmOk").onclick = $("cdmCancel").onclick = modal.onclick = null;
+                document.removeEventListener("keydown", onKey);
+                resolve(val);
+            };
+            const onKey = (e) => { if (e.key === "Escape") close(false); };
+            $("cdmOk").onclick = () => close(true);
+            $("cdmCancel").onclick = () => close(false);
+            modal.onclick = (e) => { if (e.target === modal) close(false); };
+            document.addEventListener("keydown", onKey);
+            modal.classList.remove("hidden");
+            $("cdmOk").focus();
+        });
+    }
+
     // Inscribe al jugador en el torneo actual (perfil ya existe; solo faltan decks).
+    let joinInProgress = false;
     async function joinTournament() {
+        if (joinInProgress) return;
+        joinInProgress = true;
+        try { await joinTournamentImpl(); } finally { joinInProgress = false; }
+    }
+    async function joinTournamentImpl() {
         if (!currentUser || currentUser.isAnonymous) { toast("Primero crea tu cuenta"); return; }
         const prof = myPerfilCache;
         if (!prof) { toast("Completa tu perfil primero"); editProfile(); return; }
@@ -1705,6 +1754,8 @@
         if (email && Object.values(jugadoresCache).some(p => (p.email || "").toLowerCase() === email)) {
             alert("❌ Ya hay un jugador inscrito con ese correo en este torneo."); return;
         }
+
+        if (!(await confirmDecks(decks))) { toast("Inscripción cancelada: revisa tu(s) deck(s)"); return; }
 
         const joinedRound = torneoEnCurso ? (estadoCache.currentRoundNumber + 1) : 0;
         if (torneoEnCurso && !confirm(`Te vas a inscribir con el torneo en curso.\n\nEntrarás en la Ronda ${joinedRound} con ${estadoCache.currentRoundNumber} derrota(s) por las rondas ya jugadas.\n\n¿Continuar?`)) return;
